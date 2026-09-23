@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kuttyolum Preview · Form</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; font: 13px/1.4 system-ui, sans-serif; }
+  body { display: flex; flex-direction: column; }
+  .bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 6px 10px; background: #111827; color: #cbd5e1; }
+  .bar b { color: #facc15; margin-right: 6px; }
+  .bar a, .bar button { background: #1f2937; color: #e5e7eb; border: 1px solid #374151; border-radius: 6px; padding: 4px 10px; text-decoration: none; cursor: pointer; font: inherit; }
+  .bar button.on { background: #7f1d1d; border-color: #ef4444; }
+  #msg { margin-left: auto; color: #86efac; }
+  iframe { flex: 1; border: 0; width: 100%; display: block; }
+</style>
+<script src="mock-gas.js"></script>
+<script src="seed.js"></script>
+</head>
+<body>
+<div class="bar">
+  <b>PREVIEW</b>
+  <a href="dashboard.html" target="_blank">Open Dashboard (PIN 1234) ↗</a>
+  <button id="sim">Simulate a submission</button>
+  <button id="off">Simulate network failure</button>
+  <button id="reset">Reset demo data</button>
+  <span id="msg"></span>
+</div>
+<iframe id="frame" title="Form"></iframe>
+<script>
+  bootPreview('index');
+  var msg = function (t) { document.getElementById('msg').textContent = t; };
+  document.getElementById('sim').onclick = function () { msg(simulateSubmission()); };
+  document.getElementById('off').onclick = function () {
+    __mock.offline = !__mock.offline;
+    this.classList.toggle('on', __mock.offline);
+    this.textContent = __mock.offline ? 'Network is DOWN (click to restore)' : 'Simulate network failure';
+  };
+  document.getElementById('reset').onclick = function () {
+    if (!confirm('Reset all preview data?')) return;
+    seedDemo();
+    location.reload();
+  };
+</script>
+</body>
+</html>

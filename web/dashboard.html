@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<script src="config.js"></script>
+<title>Kuttyolum Collectorum · Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4efe2; --card: #fffdf8; --ink: #21261f; --muted: #756b5a; --line: #e6ddc8; --soft: #faf6ea;
+    --accent: #2f6b5e; --accent-ink: #ffffff; --amber: #b3781c;
+    --ok: #1f7a45; --warn: #b3781c; --bad: #b3261e;
+    --radius: 14px; --shadow: 0 1px 2px rgba(33,38,31,.06), 0 6px 20px rgba(33,38,31,.06);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .hidden { display: none !important; }
+
+  /* ---------- login ---------- */
+  #login { max-width: 360px; margin: 12vh auto; padding: 0 16px; }
+  #login .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; text-align: center; }
+  #login h1 { font-size: 18px; margin: 4px 0 2px; }
+  #login p.sub { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+  #login input { width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--soft); text-align: center; letter-spacing: .2em; font-size: 18px; margin-bottom: 10px; }
+  #login .btn { width: 100%; }
+  #login .err { color: var(--bad); font-size: 13px; min-height: 16px; margin-bottom: 8px; }
+  #login label.rem { display: flex; gap: 6px; align-items: center; justify-content: center; font-size: 12.5px; color: var(--muted); margin-bottom: 12px; }
+
+  /* ---------- app shell ---------- */
+  .top { position: sticky; top: 0; z-index: 20; background: var(--accent); color: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.15); }
+  .top-inner { max-width: 1180px; margin: 0 auto; display: flex; align-items: center; gap: 12px; padding: 12px 16px; flex-wrap: wrap; }
+  .brand { margin-right: auto; }
+  .brand b { font-size: 18px; font-weight: 800; }
+  .brand span { display: block; font-size: 11px; opacity: .8; text-transform: uppercase; letter-spacing: .1em; }
+  .who { font-size: 12.5px; opacity: .9; display: flex; gap: 10px; align-items: center; }
+  .who button { color: #fff; background: rgba(255,255,255,.15); border: 0; border-radius: 8px; padding: 6px 10px; font-size: 12.5px; }
+  .tabs { max-width: 1180px; margin: 0 auto; display: flex; gap: 4px; padding: 0 12px; overflow-x: auto; }
+  .tabs button { background: none; border: 0; color: rgba(255,255,255,.72); padding: 10px 14px 12px; font-weight: 700; font-size: 13.5px; border-bottom: 3px solid transparent; white-space: nowrap; }
+  .tabs button.on { color: #fff; border-bottom-color: var(--amber); }
+
+  main { max-width: 1180px; margin: 0 auto; padding: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; margin-bottom: 14px; }
+  h2.h { margin: 0 0 12px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+  h2.h .cnt { margin-left: auto; color: var(--ink); font-weight: 700; font-size: 13px; text-transform: none; letter-spacing: 0; }
+
+  /* ---------- kpis ---------- */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; box-shadow: var(--shadow); }
+  .kpi b { display: block; font-size: 26px; font-weight: 800; color: var(--accent); }
+  .kpi span { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+
+  .bars { display: flex; flex-direction: column; gap: 8px; }
+  .bar-row { display: grid; grid-template-columns: 140px 1fr 34px; align-items: center; gap: 8px; font-size: 13px; }
+  .bar-row .track { background: var(--soft); border-radius: 6px; height: 10px; overflow: hidden; }
+  .bar-row .fill { background: var(--accent); height: 100%; border-radius: 6px; }
+  .bar-row .n { text-align: right; color: var(--muted); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 720px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ---------- special considerations ---------- */
+  .res-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .res-btn { border: 2px solid var(--line); background: var(--soft); border-radius: 12px; padding: 12px; text-align: left; }
+  .res-btn b { display: block; font-size: 22px; font-weight: 800; color: var(--accent); }
+  .res-btn span { font-size: 12.5px; color: var(--muted); }
+  .res-btn.on { border-color: var(--accent); background: var(--accent); }
+  .res-btn.on b, .res-btn.on span { color: #fff; }
+
+  /* ---------- tables ---------- */
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .filters input, .filters select { padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+  .filters input[type=text] { flex: 1; min-width: 180px; }
+  table.dt { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.dt th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 8px; border-bottom: 2px solid var(--line); white-space: nowrap; }
+  table.dt td { padding: 9px 8px; border-bottom: 1px solid var(--soft); vertical-align: top; }
+  table.dt tr:hover td { background: var(--soft); }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; background: var(--soft); border: 1px solid var(--line); margin: 1px 2px 1px 0; }
+  .pill.new { background: #fff7e6; border-color: #f1dfa8; color: #6b4f0a; }
+  .pill.del { background: #fdecea; border-color: #f3c6c1; color: var(--bad); }
+  .pill.ok { background: #eaf6ee; border-color: #bfe6cc; color: var(--ok); }
+  .rowbtns { display: flex; gap: 6px; flex-wrap: wrap; }
+  .btn { border: 0; border-radius: 8px; padding: 7px 12px; font-weight: 700; font-size: 12.5px; background: var(--accent); color: #fff; }
+  .btn.ghost { background: #fff; border: 1px solid var(--line); color: var(--ink); }
+  .btn.danger { background: var(--bad); color: #fff; }
+  .btn.sm { padding: 5px 9px; font-size: 11.5px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .empty { color: var(--muted); text-align: center; padding: 24px; }
+
+  /* ---------- modal ---------- */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(33,38,31,.5); z-index: 50; display: flex; align-items: flex-start; justify-content: center; padding: 30px 14px; overflow: auto; }
+  .modal { background: #fff; border-radius: 14px; width: 100%; max-width: 560px; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+  .modal-head { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .modal-head b { font-size: 15px; }
+  .modal-head .x { margin-left: auto; background: none; border: 0; font-size: 16px; color: var(--muted); }
+  .modal-body { padding: 16px; max-height: 70vh; overflow: auto; }
+  .modal-foot { padding: 12px 16px; border-top: 1px solid var(--line); display: flex; gap: 8px; justify-content: flex-end; }
+  .f { display: block; margin-bottom: 12px; }
+  .f span.lb { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+  .f input, .f select, .f textarea { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--soft); }
+  .f textarea { min-height: 56px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+  .chkrow { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chkrow label { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; font-size: 12.5px; background: var(--soft); }
+  .modal-err { color: var(--bad); font-size: 12.5px; margin-bottom: 8px; min-height: 16px; }
+
+  #toastWrap { position: fixed; right: 14px; bottom: 14px; z-index: 100; display: flex; flex-direction: column; gap: 8px; }
+  .toast { background: #1f2937; color: #fff; padding: 10px 14px; border-radius: 10px; font-size: 13px; box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+  .toast.error { background: var(--bad); }
+  .toast.ok { background: var(--ok); }
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="card">
+    <h1>Kuttyolum Collectorum</h1>
+    <p class="sub">Dashboard · District Administration, Kozhikode</p>
+    <div class="err" id="loginErr"></div>
+    <input id="loginPin" type="password" inputmode="numeric" placeholder="Admin PIN" autocomplete="off">
+    <label class="rem"><input type="checkbox" id="loginRemember"> Remember this device</label>
+    <button class="btn" id="loginBtn" type="button">Enter dashboard</button>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <div class="top">
+    <div class="top-inner">
+      <div class="brand"><b>Kuttyolum Collectorum</b><span>Reservation Dashboard</span></div>
+      <div class="who"><span id="whoLabel"></span><button id="logoutBtn" type="button">Log out</button></div>
+    </div>
+    <div class="tabs" id="tabs">
+      <button data-tab="overview">Overview</button>
+      <button data-tab="considerations">Special Considerations</button>
+      <button data-tab="submissions">Submissions</button>
+      <button data-tab="schools">School Management</button>
+    </div>
+  </div>
+  <main id="main"></main>
+</div>
+
+<div id="modalRoot"></div>
+<div id="toastWrap"></div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+
+  // ------------------------------------------------------------------ server
+  function api(fn) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    if (window.google && google.script && google.script.run) {
+      return new Promise(function (resolve, reject) {
+        var r = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
+        r[fn].apply(r, args);
+      });
+    }
+    var url = window.KC_CONFIG && window.KC_CONFIG.apiUrl;
+    if (!/^https:\/\//.test(url || '')) return Promise.reject(new Error('API URL missing – set apiUrl in config.js'));
+    return fetch(url, {
+      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ fn: fn, args: args })
+    }).then(function (r) {
+      if (!r.ok) throw new Error('Server error (' + r.status + ')');
+      return r.json();
+    }, function () { throw new Error('Cannot reach the server – check the internet connection.'); })
+      .then(function (j) { if (!j || !j.ok) throw new Error((j && j.error) || 'Unexpected server response'); return j.result; });
+  }
+  function call(fn) {
+    var args = [fn, S.pin].concat(Array.prototype.slice.call(arguments, 1));
+    return api.apply(null, args).then(function (res) { return res; }, function (e) {
+      var m = e && e.message || String(e);
+      if (/Invalid PIN/i.test(m)) { toast('Session expired – please log in again.', 'error'); logout(); }
+      else toast(m, 'error');
+      throw e;
+    });
+  }
+
+  function toast(msg, kind) {
+    var t = document.createElement('div'); t.className = 'toast' + (kind ? ' ' + kind : ''); t.textContent = msg;
+    $('toastWrap').appendChild(t);
+    setTimeout(function () { t.remove(); }, 4200);
+  }
+
+  // ------------------------------------------------------------------ persistence
+  var LS_PIN = 'kc_admin_pin';
+  function store(k, v, persist) { try { (persist ? localStorage : sessionStorage).setItem(k, v); } catch (e) {} }
+  function load(k) { try { return sessionStorage.getItem(k) || localStorage.getItem(k) || ''; } catch (e) { return ''; } }
+  function forget(k) { try { sessionStorage.removeItem(k); localStorage.removeItem(k); } catch (e) {} }
+
+  // ------------------------------------------------------------------ state
+  var S = { pin: '', official: '', data: null, tab: 'overview', resFilter: null, subSearch: '', subDistrictF: '', subStatusF: 'ACTIVE', schoolSearch: '' };
+
+  function logout() {
+    forget(LS_PIN); S.pin = ''; S.data = null;
+    $('app').classList.add('hidden'); $('login').classList.remove('hidden');
+    $('loginPin').value = '';
+  }
+
+  $('loginBtn').addEventListener('click', doLogin);
+  $('loginPin').addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });
+  function doLogin() {
+    var pin = $('loginPin').value.trim();
+    if (!pin) return;
+    $('loginErr').textContent = '';
+    $('loginBtn').disabled = true; $('loginBtn').textContent = 'Checking…';
+    api('getAdminBootstrap', pin).then(function (st) {
+      S.pin = pin; store(LS_PIN, pin, $('loginRemember').checked);
+      enterApp(st);
+    }, function (e) {
+      $('loginBtn').disabled = false; $('loginBtn').textContent = 'Enter dashboard';
+      $('loginErr').textContent = e.message || String(e);
+    });
+  }
+  $('logoutBtn').addEventListener('click', logout);
+
+  function enterApp(st) {
+    S.data = st;
+    S.official = st.user || '';
+    $('whoLabel').textContent = S.official || 'Signed in';
+    $('login').classList.add('hidden'); $('app').classList.remove('hidden');
+    render();
+  }
+
+  $('tabs').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-tab]'); if (!b) return;
+    S.tab = b.getAttribute('data-tab'); render();
+  });
+
+  function refresh() {
+    return call('getAdminState').then(function (st) { S.data = st; render(); return st; });
+  }
+
+  // ------------------------------------------------------------------ render
+  function render() {
+    Array.prototype.forEach.call($('tabs').querySelectorAll('button'), function (b) {
+      b.classList.toggle('on', b.getAttribute('data-tab') === S.tab);
+    });
+    var main = $('main');
+    if (S.tab === 'overview') main.innerHTML = renderOverview();
+    else if (S.tab === 'considerations') main.innerHTML = renderConsiderations();
+    else if (S.tab === 'submissions') main.innerHTML = renderSubmissions();
+    else main.innerHTML = renderSchools();
+    wireTab();
+  }
+
+  function bar(rows, max) {
+    max = max || Math.max(1, rows.reduce(function (m, r) { return Math.max(m, r.count); }, 0));
+    return '<div class="bars">' + rows.map(function (r) {
+      var pct = Math.round((r.count / max) * 100);
+      return '<div class="bar-row"><div>' + esc(r.name) + '</div><div class="track"><div class="fill" style="width:' + pct + '%"></div></div><div class="n">' + r.count + '</div></div>';
+    }).join('') + '</div>';
+  }
+
+  function renderOverview() {
+    var d = S.data, k = d.kpis;
+    var pct = function (n) { return k.schools ? Math.round((n / k.schools) * 100) : 0; };
+    return '' +
+      '<div class="kpis">' +
+        kpi(k.schools, 'Schools confirmed') +
+        kpi(k.totalStudents, 'Total students') +
+        kpi(k.districts, 'Districts covered') +
+        kpi(k.needingReservation, 'With a reservation need') +
+        kpi(k.accessibility, 'Need accessibility support') +
+        kpi(pct(k.parentConsent) + '%', 'Parent consent obtained') +
+        kpi(pct(k.photoConsent) + '%', 'Photo/video consent') +
+      '</div>' +
+      '<div class="two-col">' +
+        '<div class="card"><h2 class="h">By Educational District</h2>' + (d.byDistrict.length ? bar(d.byDistrict) : emptyMsg()) + '</div>' +
+        '<div class="card"><h2 class="h">By Institution Type</h2>' + (d.byInstitution.length ? bar(d.byInstitution) : emptyMsg()) + '</div>' +
+      '</div>' +
+      '<div class="two-col">' +
+        '<div class="card"><h2 class="h">Participating Classes</h2>' + bar(d.byClass) + '</div>' +
+        '<div class="card"><h2 class="h">By Sub-District</h2>' + (d.bySubDistrict.length ? bar(d.bySubDistrict) : emptyMsg()) + '</div>' +
+      '</div>';
+  }
+  function kpi(v, l) { return '<div class="kpi"><b>' + esc(v) + '</b><span>' + esc(l) + '</span></div>'; }
+  function emptyMsg() { return '<div class="empty">No submissions yet.</div>'; }
+
+  function renderConsiderations() {
+    var d = S.data;
+    var grid = d.reservations.map(function (r) {
+      var on = S.resFilter === r.name;
+      return '<button type="button" class="res-btn' + (on ? ' on' : '') + '" data-res="' + esc(r.name) + '"><b>' + r.count + '</b><span>' + esc(r.name) + '</span></button>';
+    }).join('');
+    var active = d.submissions.filter(function (s) { return s.status === 'ACTIVE'; });
+    var list = S.resFilter ? active.filter(function (s) { return s.reservations.indexOf(S.resFilter) >= 0; })
+      .sort(function (a, b) { return a.schoolName.localeCompare(b.schoolName); }) : [];
+    var table = !S.resFilter ? '<div class="empty">Select a category above to see the schools that need it.</div>' :
+      (!list.length ? '<div class="empty">No schools under "' + esc(S.resFilter) + '".</div>' : renderSchoolListTable(list));
+    return '<div class="card"><h2 class="h">Special Considerations</h2><div class="res-grid">' + grid + '</div></div>' +
+      '<div class="card"><h2 class="h">' + (S.resFilter ? esc(S.resFilter) : 'Schools') + '<span class="cnt">' + list.length + ' school(s)</span></h2>' + table + '</div>';
+  }
+
+  function renderSchoolListTable(list) {
+    return '<table class="dt"><thead><tr><th>School</th><th>District / Sub-District</th><th>Institution</th><th>Students</th><th>Contact</th><th>Phone</th></tr></thead><tbody>' +
+      list.map(function (s) {
+        return '<tr><td><b>' + esc(s.schoolName) + '</b></td><td>' + esc(s.district) + ' / ' + esc(s.subDistrict) + '</td><td>' + esc(s.institutionType) + '</td><td>' + s.totalStudents + '</td><td>' + esc(s.contactName) + '</td><td>' + esc(s.contactPhone) + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  }
+
+  function renderSubmissions() {
+    var d = S.data;
+    var q = S.subSearch.toLowerCase();
+    var rows = d.submissions.filter(function (s) {
+      if (S.subStatusF !== 'ALL' && s.status !== S.subStatusF) return false;
+      if (S.subDistrictF && s.district !== S.subDistrictF) return false;
+      if (q && s.schoolName.toLowerCase().indexOf(q) < 0) return false;
+      return true;
+    });
+    var extraKeys = {}; d.schoolsExtra.forEach(function (s) { extraKeys[s.name.toLowerCase()] = true; });
+    var districtOpts = '<option value="">All districts</option>' + Object.keys(d.districts).map(function (dd) { return '<option value="' + esc(dd) + '"' + (S.subDistrictF === dd ? ' selected' : '') + '>' + esc(dd) + '</option>'; }).join('');
+    var body = !rows.length ? '<div class="empty">No submissions match.</div>' : '<table class="dt"><thead><tr>' +
+      '<th>School</th><th>District</th><th>Institution</th><th>Students</th><th>Reservations</th><th>Contact</th><th>Status</th><th></th>' +
+      '</tr></thead><tbody>' + rows.map(function (s) {
+        var canPromote = s.schoolSource === 'NEW' && !extraKeys[s.schoolName.toLowerCase()];
+        return '<tr>' +
+          '<td><b>' + esc(s.schoolName) + '</b> ' + (s.schoolSource === 'NEW' ? '<span class="pill new">NEW</span>' : '') + '<div style="color:var(--muted);font-size:11px">' + esc(s.subDistrict) + '</div></td>' +
+          '<td>' + esc(s.district) + '</td>' +
+          '<td>' + esc(s.institutionType) + '</td>' +
+          '<td>' + s.totalStudents + '</td>' +
+          '<td>' + s.reservations.map(function (r) { return '<span class="pill">' + esc(r) + '</span>'; }).join('') + '</td>' +
+          '<td>' + esc(s.contactName) + '<div style="color:var(--muted);font-size:11px">' + esc(s.contactPhone) + '</div></td>' +
+          '<td>' + (s.status === 'ACTIVE' ? '<span class="pill ok">ACTIVE</span>' : '<span class="pill del">DELETED</span>') + '</td>' +
+          '<td><div class="rowbtns">' +
+            '<button class="btn ghost sm" data-edit-sub="' + esc(s.id) + '">Edit</button>' +
+            (canPromote ? '<button class="btn ghost sm" data-promote="' + esc(s.id) + '">Add to school list</button>' : '') +
+            (s.status === 'ACTIVE' ? '<button class="btn danger sm" data-del-sub="' + esc(s.id) + '">Delete</button>' : '<button class="btn ghost sm" data-restore-sub="' + esc(s.id) + '">Restore</button>') +
+          '</div></td></tr>';
+      }).join('') + '</tbody></table>';
+    return '<div class="card">' +
+      '<div class="filters">' +
+        '<input type="text" id="subSearch" placeholder="Search school name…" value="' + esc(S.subSearch) + '">' +
+        '<select id="subDistrictF">' + districtOpts + '</select>' +
+        '<select id="subStatusF">' +
+          '<option value="ACTIVE"' + (S.subStatusF === 'ACTIVE' ? ' selected' : '') + '>Active</option>' +
+          '<option value="DELETED"' + (S.subStatusF === 'DELETED' ? ' selected' : '') + '>Deleted</option>' +
+          '<option value="ALL"' + (S.subStatusF === 'ALL' ? ' selected' : '') + '>All</option>' +
+        '</select>' +
+      '</div>' +
+      '<h2 class="h">Submissions<span class="cnt">' + rows.length + ' of ' + d.submissions.length + '</span></h2>' + body + '</div>';
+  }
+
+  function renderSchools() {
+    var d = S.data;
+    var q = S.schoolSearch.toLowerCase();
+    var rows = d.schoolsExtra.filter(function (s) { return !q || s.name.toLowerCase().indexOf(q) >= 0; });
+    var body = !rows.length ? '<div class="empty">No schools added yet. Schools already present in the master sheet are searchable on the form automatically — use "Add school" here only for schools that were missing.</div>' :
+      '<table class="dt"><thead><tr><th>School</th><th>Contact</th><th>Phone</th><th>District / Sub-District</th><th>Institution</th><th>Status</th><th></th></tr></thead><tbody>' +
+      rows.map(function (s) {
+        return '<tr><td><b>' + esc(s.name) + '</b>' + (s.udise ? '<div style="color:var(--muted);font-size:11px">UDISE ' + esc(s.udise) + '</div>' : '') + '</td>' +
+          '<td>' + esc(s.contact) + '</td><td>' + esc(s.phone) + '</td>' +
+          '<td>' + esc(s.district) + (s.subDistrict ? ' / ' + esc(s.subDistrict) : '') + '</td>' +
+          '<td>' + esc(s.institutionType) + '</td>' +
+          '<td>' + (s.status === 'ACTIVE' ? '<span class="pill ok">ACTIVE</span>' : '<span class="pill del">REMOVED</span>') + '</td>' +
+          '<td><div class="rowbtns"><button class="btn ghost sm" data-edit-school="' + esc(s.name) + '">Edit</button>' +
+          (s.status === 'ACTIVE' ? '<button class="btn danger sm" data-remove-school="' + esc(s.name) + '">Remove</button>' : '<button class="btn ghost sm" data-restore-school="' + esc(s.name) + '">Restore</button>') +
+          '</div></td></tr>';
+      }).join('') + '</tbody></table>';
+    return '<div class="card">' +
+      '<div class="filters"><input type="text" id="schoolSearch" placeholder="Search managed schools…" value="' + esc(S.schoolSearch) + '"><button class="btn" id="addSchoolBtn" type="button">+ Add school</button></div>' +
+      '<h2 class="h">School Management<span class="cnt">' + rows.length + ' school(s)</span></h2>' +
+      '<div class="empty" style="text-align:left;padding:10px 0 16px;color:var(--muted);font-size:12.5px">Schools already present in the original master sheet are read-only there and always searchable on the form. This list is for schools you add or correct from here — it is merged into the form\'s search automatically.</div>' +
+      body + '</div>';
+  }
+
+  // ------------------------------------------------------------------ wiring
+  function wireTab() {
+    if (S.tab === 'considerations') {
+      Array.prototype.forEach.call($('main').querySelectorAll('[data-res]'), function (b) {
+        b.addEventListener('click', function () {
+          var r = b.getAttribute('data-res');
+          S.resFilter = S.resFilter === r ? null : r;
+          render();
+        });
+      });
+    } else if (S.tab === 'submissions') {
+      $('subSearch').addEventListener('input', function () { S.subSearch = this.value; render(); $('subSearch').focus(); $('subSearch').selectionStart = $('subSearch').value.length; });
+      $('subDistrictF').addEventListener('change', function () { S.subDistrictF = this.value; render(); });
+      $('subStatusF').addEventListener('change', function () { S.subStatusF = this.value; render(); });
+      $('main').addEventListener('click', onSubmissionAction);
+    } else if (S.tab === 'schools') {
+      $('schoolSearch').addEventListener('input', function () { S.schoolSearch = this.value; render(); $('schoolSearch').focus(); $('schoolSearch').selectionStart = $('schoolSearch').value.length; });
+      $('addSchoolBtn').addEventListener('click', function () { openSchoolModal(null); });
+      $('main').addEventListener('click', onSchoolAction);
+    }
+  }
+
+  function onSubmissionAction(e) {
+    var editId = e.target.getAttribute('data-edit-sub');
+    var delId = e.target.getAttribute('data-del-sub');
+    var restoreId = e.target.getAttribute('data-restore-sub');
+    var promoteId = e.target.getAttribute('data-promote');
+    if (editId) { var s = findSub(editId); if (s) openSubmissionModal(s); }
+    else if (delId) { if (confirm('Delete this submission?')) call('setSubmissionStatus', delId, 'DELETED').then(afterWrite); }
+    else if (restoreId) { call('setSubmissionStatus', restoreId, 'ACTIVE').then(afterWrite); }
+    else if (promoteId) { call('promoteSubmissionSchool', promoteId).then(function (r) { toast(r.message, 'ok'); afterWrite(r); }); }
+  }
+  function onSchoolAction(e) {
+    var editName = e.target.getAttribute('data-edit-school');
+    var removeName = e.target.getAttribute('data-remove-school');
+    var restoreName = e.target.getAttribute('data-restore-school');
+    if (editName) { var s = findSchool(editName); if (s) openSchoolModal(s); }
+    else if (removeName) { if (confirm('Remove "' + removeName + '" from the managed school list?')) call('setSchoolStatus', removeName, 'DELETED').then(afterWrite); }
+    else if (restoreName) { call('setSchoolStatus', restoreName, 'ACTIVE').then(afterWrite); }
+  }
+  function afterWrite(res) { S.data = res.state || S.data; toast(res.message || 'Saved.', 'ok'); render(); }
+  function findSub(id) { return S.data.submissions.filter(function (s) { return s.id === id; })[0]; }
+  function findSchool(name) { return S.data.schoolsExtra.filter(function (s) { return s.name === name; })[0]; }
+
+  // ------------------------------------------------------------------ modal: edit submission
+  function openSubmissionModal(s) {
+    var d = S.data;
+    var classOpts = d.classes.map(function (c) {
+      return '<label><input type="checkbox" value="' + c + '"' + (s.classes.indexOf(c) >= 0 ? ' checked' : '') + '> Class ' + c + '</label>';
+    }).join('');
+    var resOpts = d.reservationOptions.concat([d.noReservation]).map(function (r) {
+      return '<label><input type="checkbox" value="' + esc(r) + '"' + (s.reservations.indexOf(r) >= 0 ? ' checked' : '') + '> ' + esc(r) + '</label>';
+    }).join('');
+    var body = '' +
+      '<div class="modal-err" id="mErr"></div>' +
+      field('School Name', 'text', 'mName', s.schoolName) +
+      '<div class="grid2">' + field('UDISE Code', 'text', 'mUdise', s.udise) + selectField('Institution Type', 'mItype', d.institutionTypes, s.institutionType) + '</div>' +
+      '<div class="grid2">' + selectField('Educational District', 'mDistrict', Object.keys(d.districts), s.district) + selectField('Sub-District', 'mSubDistrict', d.districts[s.district] || [], s.subDistrict) + '</div>' +
+      field('Address', 'textarea', 'mAddress', s.address) +
+      '<div class="grid2">' + field('Total Students', 'number', 'mStudents', s.totalStudents) + field('Email', 'text', 'mEmail', s.email) + '</div>' +
+      '<label class="f"><span class="lb">Classes</span><div class="chkrow" id="mClasses">' + classOpts + '</div></label>' +
+      '<div class="grid2">' + field('Contact Person', 'text', 'mContactName', s.contactName) + field('Contact Phone', 'text', 'mContactPhone', s.contactPhone) + '</div>' +
+      '<div class="grid2">' + field('Teacher Coordinator', 'text', 'mCoordName', s.coordinatorName) + field('Coordinator Phone', 'text', 'mCoordPhone', s.coordinatorPhone) + '</div>' +
+      '<label class="f"><span class="lb">Reservations</span><div class="chkrow" id="mRes">' + resOpts + '</div></label>' +
+      '<div class="grid2">' + ynField('Accessibility support needed', 'mAccess', s.accessibility) + ynField('Parent consent obtained', 'mParent', s.parentConsent) + '</div>' +
+      ynField('Photo/video consent obtained', 'mPhoto', s.photoConsent) +
+      field('Medical / emergency info', 'textarea', 'mMedical', s.medicalInfo);
+    openModal('Edit submission · ' + s.schoolName, body, function (root) {
+      wireDistrictCascade(root, 'mDistrict', 'mSubDistrict', d.districts);
+      wireReservationExclusivity(root, 'mRes', d.noReservation);
+    }, function () {
+      var root = $('modalRoot');
+      var classes = checkedValues(root, '#mClasses');
+      var reservations = checkedValues(root, '#mRes');
+      var changes = {
+        schoolName: val(root, 'mName'), udise: val(root, 'mUdise'), institutionType: val(root, 'mItype'),
+        district: val(root, 'mDistrict'), subDistrict: val(root, 'mSubDistrict'), address: val(root, 'mAddress'),
+        totalStudents: Number(val(root, 'mStudents')), classes: classes,
+        contactName: val(root, 'mContactName'), contactPhone: val(root, 'mContactPhone'),
+        coordinatorName: val(root, 'mCoordName'), coordinatorPhone: val(root, 'mCoordPhone'),
+        email: val(root, 'mEmail'), reservations: reservations,
+        accessibility: ynVal(root, 'mAccess'), parentConsent: ynVal(root, 'mParent'), photoConsent: ynVal(root, 'mPhoto'),
+        medicalInfo: val(root, 'mMedical')
+      };
+      if (!changes.schoolName) { $('mErr').textContent = 'School name is required.'; return; }
+      if (!classes.length) { $('mErr').textContent = 'Select at least one class.'; return; }
+      if (!reservations.length) { $('mErr').textContent = 'Select at least one reservation option (or No Reservations).'; return; }
+      call('updateSubmission', s.id, changes).then(function (res) { closeModal(); afterWrite(res); }, function (e) { $('mErr').textContent = e.message || String(e); });
+    });
+  }
+
+  // ------------------------------------------------------------------ modal: add/edit school
+  function openSchoolModal(s) {
+    var d = S.data;
+    var isEdit = !!s;
+    s = s || { name: '', udise: '', contact: '', phone: '', address: '', district: '', subDistrict: '', institutionType: '' };
+    var body = '' +
+      '<div class="modal-err" id="mErr"></div>' +
+      field('School Name', 'text', 'mName', s.name) +
+      '<div class="grid2">' + field('UDISE Code', 'text', 'mUdise', s.udise) + selectField('Institution Type', 'mItype', d.institutionTypes, s.institutionType) + '</div>' +
+      '<div class="grid2">' + field('Contact Person', 'text', 'mContact', s.contact) + field('Phone', 'text', 'mPhone', s.phone) + '</div>' +
+      '<div class="grid2">' + selectField('Educational District', 'mDistrict', Object.keys(d.districts), s.district) + selectField('Sub-District', 'mSubDistrict', d.districts[s.district] || [], s.subDistrict) + '</div>' +
+      field('Address', 'textarea', 'mAddress', s.address);
+    openModal(isEdit ? 'Edit school · ' + s.name : 'Add school', body, function (root) {
+      wireDistrictCascade(root, 'mDistrict', 'mSubDistrict', d.districts);
+    }, function () {
+      var root = $('modalRoot');
+      var name = val(root, 'mName');
+      if (!name) { $('mErr').textContent = 'School name is required.'; return; }
+      var payload = {
+        name: name, udise: val(root, 'mUdise'), contact: val(root, 'mContact'), phone: val(root, 'mPhone'),
+        address: val(root, 'mAddress'), district: val(root, 'mDistrict'), subDistrict: val(root, 'mSubDistrict'),
+        institutionType: val(root, 'mItype')
+      };
+      var p = isEdit ? call('updateSchool', s.name, payload) : call('addSchool', payload);
+      p.then(function (res) { closeModal(); afterWrite(res); }, function (e) { $('mErr').textContent = e.message || String(e); });
+    });
+  }
+
+  // ------------------------------------------------------------------ modal helpers
+  function field(label, type, id, value) {
+    if (type === 'textarea') return '<label class="f"><span class="lb">' + esc(label) + '</span><textarea id="' + id + '">' + esc(value) + '</textarea></label>';
+    return '<label class="f"><span class="lb">' + esc(label) + '</span><input type="' + type + '" id="' + id + '" value="' + esc(value) + '"></label>';
+  }
+  function selectField(label, id, options, selected) {
+    return '<label class="f"><span class="lb">' + esc(label) + '</span><select id="' + id + '"><option value="">Select…</option>' +
+      options.map(function (o) { return '<option value="' + esc(o) + '"' + (o === selected ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select></label>';
+  }
+  function ynField(label, id, value) {
+    return '<label class="f"><span class="lb">' + esc(label) + '</span><div class="chkrow"><label><input type="radio" name="' + id + '" value="Yes"' + (value ? ' checked' : '') + '> Yes</label><label><input type="radio" name="' + id + '" value="No"' + (!value ? ' checked' : '') + '> No</label></div></label>';
+  }
+  function val(root, id) { var e = root.querySelector('#' + id); return e ? e.value.trim() : ''; }
+  function ynVal(root, name) { var e = root.querySelector('input[name="' + name + '"]:checked'); return !!e && e.value === 'Yes'; }
+  function checkedValues(root, sel) {
+    return Array.prototype.map.call(root.querySelectorAll(sel + ' input:checked'), function (i) { return i.value; });
+  }
+  function wireDistrictCascade(root, distId, subId, districts) {
+    var distEl = root.querySelector('#' + distId), subEl = root.querySelector('#' + subId);
+    distEl.addEventListener('change', function () {
+      var list = districts[this.value] || [];
+      subEl.innerHTML = '<option value="">Select…</option>' + list.map(function (s) { return '<option value="' + esc(s) + '">' + esc(s) + '</option>'; }).join('');
+    });
+  }
+  function wireReservationExclusivity(root, boxSel, noRes) {
+    var box = root.querySelector('#' + boxSel); if (!box) return;
+    box.addEventListener('change', function (e) {
+      if (e.target.type !== 'checkbox') return;
+      var boxes = box.querySelectorAll('input[type=checkbox]');
+      if (e.target.value === noRes && e.target.checked) {
+        boxes.forEach(function (b) { if (b !== e.target) b.checked = false; });
+      } else if (e.target.checked) {
+        boxes.forEach(function (b) { if (b.value === noRes) b.checked = false; });
+      }
+    });
+  }
+
+  function openModal(title, bodyHtml, onMount, onSave) {
+    var root = $('modalRoot');
+    root.innerHTML = '<div class="modal-backdrop"><div class="modal"><div class="modal-head"><b></b><button class="x" type="button">✕</button></div><div class="modal-body"></div><div class="modal-foot"><button class="btn ghost" id="mCancel" type="button">Cancel</button><button class="btn" id="mSave" type="button">Save</button></div></div></div>';
+    root.querySelector('.modal-head b').textContent = title;
+    root.querySelector('.modal-body').innerHTML = bodyHtml;
+    root.querySelector('.x').addEventListener('click', closeModal);
+    root.querySelector('#mCancel').addEventListener('click', closeModal);
+    root.querySelector('.modal-backdrop').addEventListener('click', function (e) { if (e.target === this) closeModal(); });
+    root.querySelector('#mSave').addEventListener('click', onSave);
+    if (onMount) onMount(root);
+  }
+  function closeModal() { $('modalRoot').innerHTML = ''; }
+
+  // ------------------------------------------------------------------ boot
+  var saved = load(LS_PIN);
+  if (saved) {
+    api('getAdminBootstrap', saved).then(function (st) { S.pin = saved; enterApp(st); }, function (e) {
+      forget(LS_PIN);
+      $('loginErr').textContent = /Invalid PIN/i.test(e.message || '') ? '' : (e.message || String(e));
+    });
+  }
+})();
+</script>
+</body>
+</html>

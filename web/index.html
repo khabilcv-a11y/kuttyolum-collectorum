@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<script src="config.js"></script>
+<title>Kuttyolum Collectorum · Reservation Preference Form</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4efe2;
+    --card: #fffdf8;
+    --ink: #21261f;
+    --muted: #756b5a;
+    --line: #e6ddc8;
+    --soft: #faf6ea;
+    --accent: #2f6b5e;
+    --accent-ink: #ffffff;
+    --amber: #b3781c;
+    --ok: #1f7a45;
+    --bad: #b3261e;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(33,38,31,.06), 0 6px 20px rgba(33,38,31,.06);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .hidden { display: none !important; }
+
+  header.top { background: var(--accent); color: #fff; padding: 22px 16px 26px; }
+  .top-inner { max-width: 760px; margin: 0 auto; }
+  .eyebrow { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .85; font-weight: 700; }
+  h1 { font-size: 26px; margin: 8px 0 2px; letter-spacing: .01em; }
+  .mal { font-size: 15px; opacity: .9; margin: 0 0 10px; }
+  .intro { font-size: 13.5px; opacity: .92; max-width: 620px; line-height: 1.55; }
+
+  main { max-width: 760px; margin: -14px auto 60px; padding: 0 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; margin-bottom: 16px; }
+  .section-title { font-size: 12.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin: 0 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+
+  .q { margin-bottom: 18px; }
+  .q:last-child { margin-bottom: 0; }
+  .q .num { color: var(--amber); font-weight: 800; font-size: 12px; letter-spacing: .06em; }
+  .q label.lbl { display: block; font-weight: 700; font-size: 15px; margin: 2px 0 3px; }
+  .q label.lbl .req { color: var(--bad); }
+  .q .hint { color: var(--muted); font-size: 12.5px; margin-bottom: 8px; }
+  .q input[type=text], .q input[type=email], .q input[type=number], .q input[type=tel], .q select, .q textarea {
+    width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--soft);
+  }
+  .q input:focus, .q select:focus, .q textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; background: #fff; }
+  .q textarea { resize: vertical; min-height: 64px; }
+  .badge { display: inline-block; margin-top: 6px; font-size: 12px; font-weight: 700; color: var(--ok); background: #eaf6ee; border: 1px solid #bfe6cc; padding: 3px 8px; border-radius: 999px; }
+  .err-field { color: var(--bad); font-size: 12.5px; margin-top: 5px; display: none; }
+  .q.invalid input, .q.invalid select, .q.invalid textarea { border-color: var(--bad); background: #fdf1f0; }
+  .q.invalid .err-field { display: block; }
+
+  /* ---- school search ---- */
+  .search-wrap { position: relative; }
+  .suggest { position: absolute; left: 0; right: 0; top: calc(100% + 4px); background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); max-height: 260px; overflow: auto; z-index: 30; }
+  .suggest button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 10px 12px; border-bottom: 1px solid var(--soft); }
+  .suggest button:last-child { border-bottom: 0; }
+  .suggest button:hover, .suggest button.hi { background: var(--soft); }
+  .suggest button b { font-weight: 700; }
+  .suggest button small { display: block; color: var(--muted); font-size: 12px; }
+  .link-btn { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 700; font-size: 13px; text-decoration: underline; margin-top: 8px; }
+
+  /* ---- chips ---- */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { border: 2px solid var(--line); background: var(--soft); border-radius: 999px; padding: 8px 15px; font-weight: 600; font-size: 13.5px; transition: all .12s; }
+  .chip.on { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); }
+  .chip:disabled { opacity: .4; cursor: not-allowed; }
+  .chips.wide .chip { flex: 1 1 90px; text-align: center; }
+  .yn { display: flex; gap: 8px; }
+  .yn .chip { min-width: 78px; text-align: center; }
+
+  .note { border-radius: 10px; padding: 10px 12px; font-size: 13px; background: #fff7e6; border: 1px solid #f1dfa8; color: #6b4f0a; margin-top: 8px; }
+
+  footer.submit-bar { position: sticky; bottom: 0; background: rgba(244,239,226,.95); backdrop-filter: blur(6px); border-top: 1px solid var(--line); padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); }
+  .submit-inner { max-width: 760px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+  .btn { border: 0; border-radius: 10px; padding: 13px 20px; font-weight: 800; font-size: 15px; background: var(--accent); color: #fff; letter-spacing: .02em; }
+  .btn:disabled { opacity: .5; }
+  .status-msg { font-size: 13px; color: var(--bad); flex: 1; }
+
+  .done { text-align: center; padding: 50px 20px; }
+  .done .tick { width: 62px; height: 62px; border-radius: 50%; background: var(--ok); color: #fff; display: grid; place-items: center; font-size: 30px; margin: 0 auto 16px; }
+  .done h2 { margin: 0 0 8px; }
+  .done p { color: var(--muted); }
+  .done .sid { font-weight: 800; color: var(--accent); }
+
+  .checkline { display: flex; gap: 10px; align-items: flex-start; }
+  .checkline input { margin-top: 3px; width: 18px; height: 18px; }
+
+  .app-footer { text-align: center; color: var(--muted); font-size: 12px; padding: 10px; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="eyebrow">District Administration · Kozhikode</div>
+    <h1 id="titleEn">Kuttyolum Collectorum</h1>
+    <p class="mal" id="titleMal">കുട്ട്യോളും കളക്ടറും — Reservation Preference Form</p>
+    <p class="intro">Please confirm your school's participation and let us know about any reservation category that applies, so seating and logistics can be planned accordingly. All information is used solely for official purposes.</p>
+  </div>
+</header>
+
+<main>
+  <div id="loadNote" class="card">Loading form…</div>
+  <form id="form" class="hidden" novalidate>
+
+    <div class="card">
+      <div class="section-title">School Information</div>
+
+      <div class="q" id="q-school">
+        <div class="num">01</div>
+        <label class="lbl" for="schoolName">School Name <span class="req">*</span></label>
+        <div class="hint">Start typing to search the school list, or add a school that isn't listed.</div>
+        <div class="search-wrap">
+          <input type="text" id="schoolName" autocomplete="off" placeholder="Start typing the school name…">
+          <div id="suggest" class="suggest hidden"></div>
+        </div>
+        <div id="matchBadge" class="badge hidden">✓ Matched from school records — details prefilled below, edit if needed</div>
+        <button type="button" class="link-btn" id="toggleNew">Can't find your school? Add it manually</button>
+        <div class="err-field">Select or enter a school name.</div>
+      </div>
+
+      <div class="q" id="q-udise">
+        <div class="num">02</div>
+        <label class="lbl" for="udise">UDISE Code</label>
+        <input type="text" id="udise" placeholder="Optional">
+      </div>
+
+      <div class="q" id="q-itype">
+        <div class="num">03</div>
+        <label class="lbl">Is the school Aided, Unaided or Private? <span class="req">*</span></label>
+        <div class="chips wide" id="itypeChips"></div>
+        <div class="err-field">Select the institution type.</div>
+      </div>
+
+      <div class="q" id="q-district">
+        <div class="num">04</div>
+        <label class="lbl" for="district">Educational District <span class="req">*</span></label>
+        <div class="hint">Select the educational district the school belongs to.</div>
+        <select id="district"><option value="">Select educational district</option></select>
+        <div class="err-field">Select an educational district.</div>
+      </div>
+
+      <div class="q" id="q-subdistrict">
+        <div class="num">05</div>
+        <label class="lbl" for="subDistrict">Sub-District <span class="req">*</span></label>
+        <div class="hint" id="subHint">Choose an educational district above to see its sub-districts.</div>
+        <select id="subDistrict" disabled><option value="">Select educational district first</option></select>
+        <div class="err-field">Select a sub-district.</div>
+      </div>
+
+      <div class="q" id="q-address">
+        <div class="num">06</div>
+        <label class="lbl" for="address">School Address</label>
+        <textarea id="address" placeholder="Full postal address"></textarea>
+      </div>
+
+      <div class="q" id="q-students">
+        <div class="num">07</div>
+        <label class="lbl" for="totalStudents">Total No. of Students in School <span class="req">*</span></label>
+        <input type="number" id="totalStudents" min="0" step="1" placeholder="e.g. 420">
+        <div class="err-field">Enter the total number of students.</div>
+      </div>
+
+      <div class="q" id="q-email">
+        <div class="num">08</div>
+        <label class="lbl" for="email">Email ID <span class="req">*</span></label>
+        <input type="email" id="email" placeholder="school@example.com">
+        <div class="err-field">Enter a valid email address.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Participant Classes</div>
+      <div class="q" id="q-classes">
+        <div class="num">09</div>
+        <label class="lbl">Which classes will be participating? <span class="req">*</span></label>
+        <div class="hint">Select all classes that apply.</div>
+        <div class="chips" id="classChips"></div>
+        <div class="err-field">Select at least one class.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Contact Person</div>
+      <div class="q" id="q-contactName">
+        <div class="num">10</div>
+        <label class="lbl" for="contactName">Contact Person Name <span class="req">*</span></label>
+        <input type="text" id="contactName" placeholder="Full name">
+        <div class="err-field">Enter the contact person's name.</div>
+      </div>
+      <div class="q" id="q-contactPhone">
+        <div class="num">11</div>
+        <label class="lbl" for="contactPhone">Contact Person - Mobile Number <span class="req">*</span></label>
+        <input type="tel" id="contactPhone" placeholder="10-digit mobile number">
+        <div class="err-field">Enter a valid mobile number.</div>
+      </div>
+      <div class="q" id="q-coordName">
+        <div class="num">12</div>
+        <label class="lbl" for="coordinatorName">Name of Teacher Coordinator <span class="req">*</span></label>
+        <input type="text" id="coordinatorName" placeholder="Full name">
+        <div class="err-field">Enter the teacher coordinator's name.</div>
+      </div>
+      <div class="q" id="q-coordPhone">
+        <div class="num">13</div>
+        <label class="lbl" for="coordinatorPhone">Teacher Coordinator - Mobile Number <span class="req">*</span></label>
+        <input type="tel" id="coordinatorPhone" placeholder="10-digit mobile number">
+        <div class="err-field">Enter a valid mobile number.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Special Reservations</div>
+      <div class="q" id="q-reservations">
+        <div class="num">14</div>
+        <label class="lbl">Reservations, if any</label>
+        <div class="hint">Select all that apply, or choose "No Reservations".</div>
+        <div class="chips" id="reservationChips"></div>
+        <div class="err-field">Select at least one option, or "No Reservations".</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Accessibility &amp; Permissions</div>
+      <div class="q" id="q-accessibility">
+        <div class="num">15</div>
+        <label class="lbl">Are any participating students in need of accessibility support? <span class="req">*</span></label>
+        <div class="yn" id="accessibilityYn"></div>
+        <div class="err-field">Please select Yes or No.</div>
+      </div>
+      <div class="q" id="q-parentConsent">
+        <div class="num">16</div>
+        <label class="lbl">Have Parent/Guardian Consent Forms been obtained for all participating students? <span class="req">*</span></label>
+        <div class="yn" id="parentConsentYn"></div>
+        <div class="err-field">Please select Yes or No.</div>
+      </div>
+      <div class="q" id="q-photoConsent">
+        <div class="num">17</div>
+        <label class="lbl">Has consent been obtained for photography and videography during the programme? <span class="req">*</span></label>
+        <div class="yn" id="photoConsentYn"></div>
+        <div class="err-field">Please select Yes or No.</div>
+      </div>
+      <div class="q" id="q-medical">
+        <div class="num">18</div>
+        <label class="lbl" for="medicalInfo">Please mention any medical conditions, allergies, or emergency information that should be known in advance</label>
+        <textarea id="medicalInfo"></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Confirmation</div>
+      <div class="q" id="q-declaration">
+        <div class="num">19</div>
+        <label class="lbl">Declaration <span class="req">*</span></label>
+        <label class="checkline">
+          <input type="checkbox" id="declaration">
+          <span>We confirm our participation in Kuttyolum Collectorum on the assigned date and certify that all information provided above is accurate.</span>
+        </label>
+        <div class="err-field">Please confirm the declaration.</div>
+      </div>
+    </div>
+
+    <footer class="submit-bar">
+      <div class="submit-inner">
+        <span class="status-msg" id="statusMsg"></span>
+        <button type="submit" class="btn" id="submitBtn">Submit Confirmation</button>
+      </div>
+    </footer>
+  </form>
+
+  <div id="doneCard" class="done hidden">
+    <div class="tick">✓</div>
+    <h2>Confirmation received</h2>
+    <p>Reference ID <span class="sid" id="doneId"></span></p>
+    <p id="doneMsg"></p>
+  </div>
+</main>
+
+<p class="app-footer">Kuttyolum Collectorum · District Administration, Kozhikode</p>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+
+  // ------------------------------------------------------------------ server
+  function api(fn) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    if (window.google && google.script && google.script.run) {
+      return new Promise(function (resolve, reject) {
+        var r = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
+        r[fn].apply(r, args);
+      });
+    }
+    var url = window.KC_CONFIG && window.KC_CONFIG.apiUrl;
+    if (!/^https:\/\//.test(url || '')) return Promise.reject(new Error('API URL missing – set apiUrl in config.js'));
+    return fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ fn: fn, args: args })
+    }).then(function (r) {
+      if (!r.ok) throw new Error('Server error (' + r.status + ')');
+      return r.json();
+    }, function () {
+      throw new Error('Cannot reach the server – check the internet connection.');
+    }).then(function (j) {
+      if (!j || !j.ok) throw new Error((j && j.error) || 'Unexpected server response');
+      return j.result;
+    });
+  }
+
+  // ------------------------------------------------------------------ state
+  var BOOT = null;
+  var SEL = { school: null, matched: false, classes: {}, reservations: {}, itype: '', accessibility: null, parentConsent: null, photoConsent: null };
+
+  function chip(container, text, on, onClick, disabled) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip' + (on ? ' on' : ''); b.textContent = text;
+    if (disabled) b.disabled = true;
+    b.addEventListener('click', onClick);
+    container.appendChild(b);
+    return b;
+  }
+
+  function renderClasses() {
+    var c = $('classChips'); c.innerHTML = '';
+    BOOT.classes.forEach(function (cls) {
+      chip(c, 'Class ' + cls, !!SEL.classes[cls], function () {
+        SEL.classes[cls] = !SEL.classes[cls];
+        renderClasses();
+      });
+    });
+  }
+
+  function renderInstitutionType() {
+    var c = $('itypeChips'); c.innerHTML = '';
+    BOOT.institutionTypes.forEach(function (t) {
+      chip(c, t, SEL.itype === t, function () { SEL.itype = t; renderInstitutionType(); });
+    });
+  }
+
+  function renderReservations() {
+    var c = $('reservationChips'); c.innerHTML = '';
+    var noRes = BOOT.noReservation;
+    var noOn = !!SEL.reservations[noRes];
+    BOOT.reservationOptions.forEach(function (r) {
+      chip(c, r, !!SEL.reservations[r], function () {
+        if (SEL.reservations[r]) delete SEL.reservations[r]; else SEL.reservations[r] = true;
+        delete SEL.reservations[noRes];
+        renderReservations();
+      }, noOn);
+    });
+    chip(c, noRes, noOn, function () {
+      if (noOn) { delete SEL.reservations[noRes]; } else { SEL.reservations = {}; SEL.reservations[noRes] = true; }
+      renderReservations();
+    });
+  }
+
+  function ynGroup(id, key) {
+    var c = $(id); c.innerHTML = '';
+    ['Yes', 'No'].forEach(function (v) {
+      chip(c, v, SEL[key] === v, function () { SEL[key] = v; ynGroup(id, key); });
+    });
+  }
+
+  function renderDistricts() {
+    var sel = $('district');
+    sel.innerHTML = '<option value="">Select educational district</option>';
+    Object.keys(BOOT.districts).forEach(function (d) {
+      var o = document.createElement('option'); o.value = d; o.textContent = d; sel.appendChild(o);
+    });
+  }
+
+  function renderSubDistricts(district) {
+    var sel = $('subDistrict');
+    var list = BOOT.districts[district] || [];
+    sel.innerHTML = '';
+    if (!list.length) {
+      sel.innerHTML = '<option value="">Select educational district first</option>';
+      sel.disabled = true;
+      $('subHint').textContent = 'Choose an educational district above to see its sub-districts.';
+      return;
+    }
+    sel.innerHTML = '<option value="">Select sub-district</option>' + list.map(function (s) { return '<option value="' + s + '">' + s + '</option>'; }).join('');
+    sel.disabled = false;
+    $('subHint').textContent = 'Sub-districts of ' + district + '.';
+  }
+
+  // ------------------------------------------------------------------ school search
+  var schoolIdx = [];
+  function buildSuggestions(q) {
+    var box = $('suggest');
+    if (!q) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    var ql = q.toLowerCase();
+    var matches = schoolIdx.filter(function (s) { return s.name.toLowerCase().indexOf(ql) >= 0; }).slice(0, 8);
+    if (!matches.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    box.innerHTML = '';
+    matches.forEach(function (s) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.innerHTML = '<b></b>' + (s.address ? '<small></small>' : '');
+      b.querySelector('b').textContent = s.name;
+      if (s.address) b.querySelector('small').textContent = s.address;
+      b.addEventListener('click', function () { selectSchool(s); });
+      box.appendChild(b);
+    });
+    box.classList.remove('hidden');
+  }
+
+  function selectSchool(s) {
+    SEL.school = s; SEL.matched = true;
+    $('schoolName').value = s.name;
+    $('udise').value = s.udise || '';
+    $('contactName').value = s.contact || '';
+    $('contactPhone').value = s.phone || '';
+    $('address').value = s.address || '';
+    $('matchBadge').classList.remove('hidden');
+    $('suggest').classList.add('hidden');
+    $('toggleNew').textContent = "Not your school? Search again";
+    setInvalid('q-school', false);
+  }
+
+  function clearSchoolMatch(manualMode) {
+    SEL.school = null; SEL.matched = false;
+    $('matchBadge').classList.add('hidden');
+    if (manualMode) {
+      $('toggleNew').textContent = 'Search the school list instead';
+      $('udise').value = ''; $('contactName').value = ''; $('contactPhone').value = ''; $('address').value = '';
+    } else {
+      $('toggleNew').textContent = "Can't find your school? Add it manually";
+    }
+  }
+
+  var manualMode = false;
+  $('toggleNew').addEventListener('click', function () {
+    manualMode = !manualMode;
+    clearSchoolMatch(manualMode);
+    if (manualMode) { $('schoolName').value = ''; $('schoolName').focus(); }
+  });
+
+  $('schoolName').addEventListener('input', function () {
+    SEL.matched = false; $('matchBadge').classList.add('hidden');
+    if (!manualMode) buildSuggestions(this.value.trim());
+  });
+  $('schoolName').addEventListener('blur', function () { setTimeout(function () { $('suggest').classList.add('hidden'); }, 150); });
+
+  $('district').addEventListener('change', function () { renderSubDistricts(this.value); });
+
+  // ------------------------------------------------------------------ validation & submit
+  function setInvalid(qid, on) { $(qid).classList.toggle('invalid', on); }
+
+  function validate() {
+    var ok = true;
+    function need(qid, cond) { var bad = !cond; setInvalid(qid, bad); if (bad) ok = false; }
+    need('q-school', $('schoolName').value.trim().length > 0);
+    need('q-itype', !!SEL.itype);
+    need('q-district', !!$('district').value);
+    need('q-subdistrict', !!$('subDistrict').value);
+    need('q-students', $('totalStudents').value !== '' && Number($('totalStudents').value) >= 0);
+    need('q-email', /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test($('email').value.trim()));
+    need('q-classes', Object.keys(SEL.classes).filter(function (k) { return SEL.classes[k]; }).length > 0);
+    need('q-contactName', $('contactName').value.trim().length > 0);
+    need('q-contactPhone', $('contactPhone').value.replace(/\D/g, '').length >= 10);
+    need('q-coordName', $('coordinatorName').value.trim().length > 0);
+    need('q-coordPhone', $('coordinatorPhone').value.replace(/\D/g, '').length >= 10);
+    need('q-reservations', Object.keys(SEL.reservations).length > 0);
+    need('q-accessibility', !!SEL.accessibility);
+    need('q-parentConsent', !!SEL.parentConsent);
+    need('q-photoConsent', !!SEL.photoConsent);
+    need('q-declaration', $('declaration').checked);
+    return ok;
+  }
+
+  $('form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    $('statusMsg').textContent = '';
+    if (!validate()) {
+      $('statusMsg').textContent = 'Please complete the highlighted fields.';
+      var firstInvalid = document.querySelector('.q.invalid');
+      if (firstInvalid) firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    var payload = {
+      schoolName: $('schoolName').value.trim(),
+      schoolSource: SEL.matched ? 'LISTED' : 'NEW',
+      udise: $('udise').value.trim(),
+      institutionType: SEL.itype,
+      district: $('district').value,
+      subDistrict: $('subDistrict').value,
+      address: $('address').value.trim(),
+      totalStudents: Number($('totalStudents').value),
+      classes: Object.keys(SEL.classes).filter(function (k) { return SEL.classes[k]; }),
+      contactName: $('contactName').value.trim(),
+      contactPhone: $('contactPhone').value.trim(),
+      coordinatorName: $('coordinatorName').value.trim(),
+      coordinatorPhone: $('coordinatorPhone').value.trim(),
+      email: $('email').value.trim(),
+      reservations: Object.keys(SEL.reservations),
+      accessibility: SEL.accessibility === 'Yes',
+      parentConsent: SEL.parentConsent === 'Yes',
+      photoConsent: SEL.photoConsent === 'Yes',
+      medicalInfo: $('medicalInfo').value.trim(),
+      declaration: $('declaration').checked
+    };
+    $('submitBtn').disabled = true; $('submitBtn').textContent = 'Submitting…';
+    api('submitReservation', payload).then(function (res) {
+      $('form').classList.add('hidden');
+      $('doneId').textContent = res.id;
+      $('doneMsg').textContent = res.message;
+      $('doneCard').classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, function (err) {
+      $('submitBtn').disabled = false; $('submitBtn').textContent = 'Submit Confirmation';
+      $('statusMsg').textContent = err.message || String(err);
+    });
+  });
+
+  // ------------------------------------------------------------------ boot
+  api('getFormBootstrap').then(function (boot) {
+    BOOT = boot;
+    schoolIdx = boot.schools || [];
+    $('titleEn').textContent = boot.meta.title;
+    document.title = boot.meta.title + ' · Reservation Preference Form';
+    renderClasses(); renderInstitutionType(); renderReservations(); renderDistricts();
+    ynGroup('accessibilityYn', 'accessibility');
+    ynGroup('parentConsentYn', 'parentConsent');
+    ynGroup('photoConsentYn', 'photoConsent');
+    $('loadNote').classList.add('hidden');
+    $('form').classList.remove('hidden');
+  }, function (err) {
+    $('loadNote').textContent = 'Could not load the form: ' + (err.message || err);
+  });
+})();
+</script>
+</body>
+</html>
