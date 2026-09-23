@@ -189,8 +189,12 @@ function submitReservation(payload) {
     var institutionType = clean_(payload.institutionType);
     if (CONFIG.INSTITUTION_TYPES.indexOf(institutionType) < 0) throw new Error('Select whether the school is Aided, Unaided or Private.');
 
+    // Classes, teacher coordinator, email, accessibility/consent and medical
+    // info are intentionally NOT collected here — they're already gathered
+    // by the separate registration/session-confirmation form that shares
+    // this spreadsheet. Kept optional (not required) so old integrations or
+    // a future combined form can still pass them through if ever needed.
     var classes = [].concat(payload.classes || []).map(clean_).filter(Boolean);
-    if (!classes.length) throw new Error('Select at least one participating class.');
 
     var totalStudents = Number(payload.totalStudents);
     if (!isFinite(totalStudents) || totalStudents < 0 || Math.floor(totalStudents) !== totalStudents) {
@@ -204,11 +208,7 @@ function submitReservation(payload) {
 
     var coordName = clean_(payload.coordinatorName);
     var coordPhone = clean_(payload.coordinatorPhone);
-    if (!coordName) throw new Error('Teacher coordinator name is required.');
-    if (!validPhone_(coordPhone)) throw new Error('Enter a valid teacher coordinator mobile number.');
-
     var email = clean_(payload.email);
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('Enter a valid email address.');
 
     var reservations = [].concat(payload.reservations || []).map(clean_).filter(Boolean);
     if (reservations.indexOf(CONFIG.NO_RESERVATION) >= 0) reservations = [CONFIG.NO_RESERVATION];

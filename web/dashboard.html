@@ -9,11 +9,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <style>
   :root {
     --bg: #f4efe2; --card: #fffdf8; --ink: #21261f; --muted: #756b5a; --line: #e6ddc8; --soft: #faf6ea;
@@ -114,14 +109,18 @@
   .modal-err { color: var(--bad); font-size: 12.5px; margin-bottom: 8px; min-height: 16px; }
 
   /* ---------- map ---------- */
-  #kcMap { height: 560px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: var(--soft); }
-  .map-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 12px; font-size: 12.5px; }
-  .map-legend .sw { display: inline-flex; align-items: center; gap: 6px; }
-  .map-legend .dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.15); }
-  .district-label { background: none; border: none; box-shadow: none; font-weight: 800; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; text-shadow: 0 1px 2px rgba(255,255,255,.9), 0 -1px 2px rgba(255,255,255,.9); }
+  .map-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 12px; font-size: 12.5px; }
+  .map-legend .grp { display: flex; align-items: center; gap: 8px; }
+  .map-legend .sw { width: 14px; height: 14px; border-radius: 4px; flex: none; }
+  #kcMapWrap { background: #eaf1f2; border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+  #kcMapSvg { width: 100%; height: auto; display: block; }
+  .map-region { stroke: #fffdf8; stroke-width: 1.5; cursor: pointer; transition: opacity .12s, stroke-width .12s; }
+  .map-region:hover { opacity: .82; }
+  .map-region.sel { stroke: var(--ink); stroke-width: 3; }
+  .map-label { font-size: 10.5px; font-weight: 700; fill: #fff; text-anchor: middle; pointer-events: none; text-shadow: 0 1px 2px rgba(0,0,0,.35); }
+  .map-count { fill: var(--ink); stroke: #fffdf8; stroke-width: 1.5; cursor: pointer; }
+  .map-count-n { font-size: 11px; font-weight: 800; fill: #fff; text-anchor: middle; pointer-events: none; }
   .map-note { color: var(--muted); font-size: 12px; margin-top: 10px; }
-  .leaflet-popup-content b { display: block; margin-bottom: 3px; }
-  .leaflet-popup-content .pill { font-size: 10.5px; }
 
   #toastWrap { position: fixed; right: 14px; bottom: 14px; z-index: 100; display: flex; flex-direction: column; gap: 8px; }
   .toast { background: #1f2937; color: #fff; padding: 10px 14px; border-radius: 10px; font-size: 13px; box-shadow: 0 8px 24px rgba(0,0,0,.3); }
@@ -169,14 +168,10 @@
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
 
   // ------------------------------------------------------------------ geography
-  // Approximate reference points (town/panchayat centres), not surveyed
-  // boundaries or exact school addresses — good enough to group and locate
-  // submissions visually on the map.
-  var DISTRICT_GEO = {
-    'Kozhikode':    { center: [11.2900, 75.8100], radius: 15000, color: '#2f6b5e' },
-    'Vatakara':     { center: [11.6100, 75.6300], radius: 14000, color: '#b3781c' },
-    'Thamarassery': { center: [11.4300, 75.9300], radius: 14000, color: '#6a4c93' }
-  };
+  // Relative positions only (from real town/panchayat locations) used to lay
+  // the sub-district regions out in roughly the right places — this draws a
+  // schematic block map, not a surveyed boundary map.
+  var DISTRICT_BASE_COLOR = { 'Kozhikode': '#2f6b5e', 'Vatakara': '#b3781c', 'Thamarassery': '#6a4c93' };
   var SUBDISTRICT_GEO = {
     'Kozhikode City': [11.2588, 75.7804], 'Kozhikode Rural': [11.2200, 75.8500],
     'Chevayur': [11.2874, 75.8078], 'Feroke': [11.1591, 75.8199],
@@ -188,7 +183,46 @@
     'Mukkam': [11.3676, 75.9911], 'Balussery': [11.3978, 75.8256],
     'Kunnamangalam': [11.3221, 75.8747], 'Perambra': [11.5044, 75.8214]
   };
-  var mapInstance = null;
+  var S_MAP = { selected: null };
+
+  // ---- tiny self-contained Voronoi (no map library needed): clip a big box
+  // per point against every other point's perpendicular bisector.
+  function clipHalf(poly, a, b, c) {
+    var out = [];
+    for (var i = 0; i < poly.length; i++) {
+      var cur = poly[i], prev = poly[(i - 1 + poly.length) % poly.length];
+      var curIn = (a * cur[0] + b * cur[1]) <= c, prevIn = (a * prev[0] + b * prev[1]) <= c;
+      if (curIn !== prevIn) {
+        var denom = a * (cur[0] - prev[0]) + b * (cur[1] - prev[1]);
+        var t = denom ? (c - (a * prev[0] + b * prev[1])) / denom : 0;
+        out.push([prev[0] + t * (cur[0] - prev[0]), prev[1] + t * (cur[1] - prev[1])]);
+      }
+      if (curIn) out.push(cur);
+    }
+    return out;
+  }
+  function voronoiCells(points, box) {
+    return points.map(function (p, i) {
+      var poly = [[box.x0, box.y0], [box.x1, box.y0], [box.x1, box.y1], [box.x0, box.y1]];
+      points.forEach(function (q, j) {
+        if (j === i) return;
+        var a = 2 * (q[0] - p[0]), b = 2 * (q[1] - p[1]);
+        var c = (q[0] * q[0] + q[1] * q[1]) - (p[0] * p[0] + p[1] * p[1]);
+        poly = clipHalf(poly, a, b, c);
+      });
+      return poly;
+    });
+  }
+  function centroid(poly) {
+    var x = 0, y = 0; poly.forEach(function (p) { x += p[0]; y += p[1]; });
+    return [x / poly.length, y / poly.length];
+  }
+  function shade(hex, amt) { // amt: -1..1, negative darkens, positive lightens
+    var n = parseInt(hex.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    var mix = function (c) { return Math.round(amt >= 0 ? c + (255 - c) * amt : c * (1 + amt)); };
+    var clamp = function (c) { return Math.max(0, Math.min(255, c)); };
+    return '#' + [mix(r), mix(g), mix(b)].map(function (c) { return clamp(c).toString(16).padStart(2, '0'); }).join('');
+  }
 
   // ------------------------------------------------------------------ server
   function api(fn) {
@@ -280,7 +314,6 @@
     Array.prototype.forEach.call($('tabs').querySelectorAll('button'), function (b) {
       b.classList.toggle('on', b.getAttribute('data-tab') === S.tab);
     });
-    if (mapInstance) { mapInstance.remove(); mapInstance = null; }
     var main = $('main');
     if (S.tab === 'overview') main.innerHTML = renderOverview();
     else if (S.tab === 'map') main.innerHTML = renderMapShell();
@@ -300,77 +333,110 @@
 
   function renderOverview() {
     var d = S.data, k = d.kpis;
-    var pct = function (n) { return k.schools ? Math.round((n / k.schools) * 100) : 0; };
     return '' +
       '<div class="kpis">' +
         kpi(k.schools, 'Schools confirmed') +
         kpi(k.totalStudents, 'Total students') +
         kpi(k.districts, 'Districts covered') +
         kpi(k.needingReservation, 'With a reservation need') +
-        kpi(k.accessibility, 'Need accessibility support') +
-        kpi(pct(k.parentConsent) + '%', 'Parent consent obtained') +
-        kpi(pct(k.photoConsent) + '%', 'Photo/video consent') +
       '</div>' +
       '<div class="two-col">' +
         '<div class="card"><h2 class="h">By Educational District</h2>' + (d.byDistrict.length ? bar(d.byDistrict) : emptyMsg()) + '</div>' +
         '<div class="card"><h2 class="h">By Institution Type</h2>' + (d.byInstitution.length ? bar(d.byInstitution) : emptyMsg()) + '</div>' +
       '</div>' +
-      '<div class="two-col">' +
-        '<div class="card"><h2 class="h">Participating Classes</h2>' + bar(d.byClass) + '</div>' +
-        '<div class="card"><h2 class="h">By Sub-District</h2>' + (d.bySubDistrict.length ? bar(d.bySubDistrict) : emptyMsg()) + '</div>' +
-      '</div>';
+      '<div class="card"><h2 class="h">By Sub-District</h2>' + (d.bySubDistrict.length ? bar(d.bySubDistrict) : emptyMsg()) + '</div>';
   }
   function kpi(v, l) { return '<div class="kpi"><b>' + esc(v) + '</b><span>' + esc(l) + '</span></div>'; }
   function emptyMsg() { return '<div class="empty">No submissions yet.</div>'; }
 
   function renderMapShell() {
-    var legend = Object.keys(DISTRICT_GEO).map(function (d) {
-      return '<span class="sw"><span class="dot" style="background:' + DISTRICT_GEO[d].color + '"></span>' + esc(d) + '</span>';
+    var legend = Object.keys(DISTRICT_BASE_COLOR).map(function (d) {
+      return '<span class="grp"><span class="sw" style="background:' + DISTRICT_BASE_COLOR[d] + '"></span>' + esc(d) + '</span>';
     }).join('');
     return '<div class="card">' +
-      '<h2 class="h">School Registrations on the Map</h2>' +
+      '<h2 class="h">School Registrations by Educational District</h2>' +
       '<div class="map-legend">' + legend + '</div>' +
-      '<div id="kcMap"></div>' +
-      '<div class="map-note">Markers are grouped by sub-district reference point, not exact school addresses — the shaded circles are illustrative district areas, not surveyed boundaries. Click a marker (or a cluster) to see the school(s).</div>' +
-      '</div>';
+      '<div id="kcMapWrap"><svg id="kcMapSvg" viewBox="0 0 640 720"></svg></div>' +
+      '<div class="map-note">A schematic block map — each region is one sub-district, shaded by its educational district (darker/lighter within a district just tells the sub-districts apart). Positions are approximate, not surveyed boundaries. The number badge is how many schools have registered there; click a region to see them.</div>' +
+      '</div>' +
+      '<div class="card" id="kcMapListCard"></div>';
   }
 
-  function initMap() {
-    if (typeof L === 'undefined' || !$('kcMap')) return;
-    if (mapInstance) { mapInstance.remove(); mapInstance = null; }
-    mapInstance = L.map('kcMap', { scrollWheelZoom: true }).setView([11.35, 75.80], 10);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(mapInstance);
+  function buildMap() {
+    var svg = $('kcMapSvg');
+    if (!svg) return;
+    var names = Object.keys(SUBDISTRICT_GEO);
+    var lats = names.map(function (n) { return SUBDISTRICT_GEO[n][0]; });
+    var lngs = names.map(function (n) { return SUBDISTRICT_GEO[n][1]; });
+    var latMin = Math.min.apply(null, lats), latMax = Math.max.apply(null, lats);
+    var lngMin = Math.min.apply(null, lngs), lngMax = Math.max.apply(null, lngs);
+    var W = 640, H = 720, pad = 90;
+    var sx = (W - pad * 2) / (lngMax - lngMin || 1), sy = (H - pad * 2) / (latMax - latMin || 1);
+    var proj = function (lat, lng) { return [pad + (lng - lngMin) * sx, pad + (latMax - lat) * sy]; };
+    var points = names.map(function (n) { return proj(SUBDISTRICT_GEO[n][0], SUBDISTRICT_GEO[n][1]); });
+    var box = { x0: -60, y0: -60, x1: W + 60, y1: H + 60 };
+    var cells = voronoiCells(points, box);
 
-    Object.keys(DISTRICT_GEO).forEach(function (name) {
-      var g = DISTRICT_GEO[name];
-      L.circle(g.center, { radius: g.radius, color: g.color, weight: 2, fillColor: g.color, fillOpacity: 0.06 }).addTo(mapInstance);
-      L.marker(g.center, {
-        icon: L.divIcon({ className: 'district-label', html: esc(name), iconSize: [0, 0] })
-      }).addTo(mapInstance);
+    var counts = {}, byDistrictAndSub = {};
+    (S.data.submissions || []).filter(function (s) { return s.status === 'ACTIVE'; }).forEach(function (s) {
+      counts[s.subDistrict] = (counts[s.subDistrict] || 0) + 1;
+      (byDistrictAndSub[s.subDistrict] = byDistrictAndSub[s.subDistrict] || []).push(s);
     });
 
-    var cluster = L.markerClusterGroup({ maxClusterRadius: 40 });
-    var active = S.data.submissions.filter(function (s) { return s.status === 'ACTIVE'; });
-    active.forEach(function (s) {
-      var base = SUBDISTRICT_GEO[s.subDistrict] || (DISTRICT_GEO[s.district] && DISTRICT_GEO[s.district].center);
-      if (!base) return;
-      var lat = base[0] + (Math.random() - 0.5) * 0.012;
-      var lng = base[1] + (Math.random() - 0.5) * 0.012;
-      var color = (DISTRICT_GEO[s.district] && DISTRICT_GEO[s.district].color) || '#2f6b5e';
-      var marker = L.circleMarker([lat, lng], { radius: 9, color: '#fff', weight: 2, fillColor: color, fillOpacity: 0.95 });
-      var resTags = s.reservations.map(function (r) { return '<span class="pill">' + esc(r) + '</span>'; }).join(' ');
-      marker.bindPopup(
-        '<b>' + esc(s.schoolName) + '</b>' +
-        esc(s.subDistrict) + ', ' + esc(s.district) + '<br>' +
-        esc(s.institutionType) + ' &middot; ' + s.totalStudents + ' students<br>' +
-        esc(s.contactName) + (s.contactPhone ? ' &middot; ' + esc(s.contactPhone) : '') +
-        (resTags ? '<div style="margin-top:5px">' + resTags + '</div>' : '')
-      );
-      cluster.addLayer(marker);
+    var byDistrict = {};
+    names.forEach(function (n) {
+      var d = findDistrictFor(n);
+      (byDistrict[d] = byDistrict[d] || []).push(n);
     });
-    mapInstance.addLayer(cluster);
+
+    var svgParts = [];
+    names.forEach(function (n, i) {
+      var d = findDistrictFor(n);
+      var base = DISTRICT_BASE_COLOR[d] || '#666';
+      var siblings = byDistrict[d] || [n];
+      var idx = siblings.indexOf(n);
+      var amt = siblings.length > 1 ? (-0.28 + (0.5 * idx) / (siblings.length - 1)) : 0;
+      var fill = shade(base, amt);
+      var pts = cells[i].map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ');
+      var c = centroid(cells[i]);
+      svgParts.push('<polygon class="map-region" data-sub="' + esc(n) + '" points="' + pts + '" fill="' + fill + '"></polygon>');
+      svgParts.push('<text class="map-label" x="' + c[0].toFixed(1) + '" y="' + (c[1] - (counts[n] ? 9 : -3)).toFixed(1) + '">' + esc(n) + '</text>');
+      if (counts[n]) {
+        svgParts.push('<circle class="map-count" cx="' + c[0].toFixed(1) + '" cy="' + (c[1] + 12).toFixed(1) + '" r="11" data-sub="' + esc(n) + '"></circle>');
+        svgParts.push('<text class="map-count-n" x="' + c[0].toFixed(1) + '" y="' + (c[1] + 16).toFixed(1) + '" data-sub="' + esc(n) + '">' + counts[n] + '</text>');
+      }
+    });
+    svg.innerHTML = svgParts.join('');
+
+    svg.querySelectorAll('[data-sub]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var sub = el.getAttribute('data-sub');
+        S_MAP.selected = S_MAP.selected === sub ? null : sub;
+        applyMapSelection(byDistrictAndSub);
+      });
+    });
+    applyMapSelection(byDistrictAndSub);
+  }
+
+  function findDistrictFor(subDistrict) {
+    var d = S.data.districts;
+    var found = Object.keys(d).filter(function (k) { return d[k].indexOf(subDistrict) >= 0; })[0];
+    return found || Object.keys(DISTRICT_BASE_COLOR)[0];
+  }
+
+  function applyMapSelection(byDistrictAndSub) {
+    var svg = $('kcMapSvg');
+    svg.querySelectorAll('.map-region').forEach(function (el) {
+      el.classList.toggle('sel', el.getAttribute('data-sub') === S_MAP.selected);
+    });
+    var card = $('kcMapListCard');
+    if (!S_MAP.selected) {
+      card.innerHTML = '<div class="empty">Click a region above to see the schools registered there.</div>';
+      return;
+    }
+    var list = (byDistrictAndSub[S_MAP.selected] || []).sort(function (a, b) { return a.schoolName.localeCompare(b.schoolName); });
+    card.innerHTML = '<h2 class="h">' + esc(S_MAP.selected) + '<span class="cnt">' + list.length + ' school(s)</span></h2>' +
+      (list.length ? renderSchoolListTable(list) : '<div class="empty">No schools registered here yet.</div>');
   }
 
   function renderConsiderations() {
@@ -463,7 +529,7 @@
   // ------------------------------------------------------------------ wiring
   function wireTab() {
     if (S.tab === 'map') {
-      initMap();
+      buildMap();
     } else if (S.tab === 'considerations') {
       Array.prototype.forEach.call($('main').querySelectorAll('[data-res]'), function (b) {
         b.addEventListener('click', function () {

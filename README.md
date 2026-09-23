@@ -66,13 +66,17 @@ number and address from the sheet — fields stay editable so staff can correct 
 categories (Fisheries, Girls Only, SC / ST, Rural Area, PWD) can be combined freely; picking **No
 Reservations** clears the others.
 
+The form intentionally does **not** collect classes, teacher coordinator, email, accessibility/consent or
+medical info — that's already gathered by the separate registration/session-confirmation form that shares
+this same spreadsheet. This form is only for institution type, total students and reservation preference.
+
 **District Administration (dashboard):**
-- **Overview** — schools confirmed, total students, districts covered, accessibility/consent counts, and
-  breakdowns by institution type, district, sub-district and participating class.
-- **Map** — an interactive Leaflet/OpenStreetMap view: the three educational districts as coloured
-  reference circles, and every active submission plotted (clustered) near its sub-district's reference
-  point — click a marker for the school's details. Positions are approximate (grouped by sub-district,
-  not geocoded from the actual address), and the circles are illustrative areas, not surveyed boundaries.
+- **Overview** — schools confirmed, total students, districts covered, and breakdowns by institution type,
+  district and sub-district.
+- **Map** — a schematic block map (no external map library, no satellite imagery): each sub-district is a
+  region computed from its real-world position, shaded by its educational district (darker/lighter within
+  a district just tells the sub-districts apart). A badge shows how many schools registered there; click a
+  region to see them. Positions are approximate reference points, not surveyed boundaries.
 - **Special Considerations** — a button per reservation category with its count; click one to see the
   sorted list of schools that need it.
 - **Submissions** — search/filter all confirmations, edit any field, soft-delete/restore, and for schools
