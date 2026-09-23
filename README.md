@@ -69,6 +69,10 @@ Reservations** clears the others.
 **District Administration (dashboard):**
 - **Overview** — schools confirmed, total students, districts covered, accessibility/consent counts, and
   breakdowns by institution type, district, sub-district and participating class.
+- **Map** — an interactive Leaflet/OpenStreetMap view: the three educational districts as coloured
+  reference circles, and every active submission plotted (clustered) near its sub-district's reference
+  point — click a marker for the school's details. Positions are approximate (grouped by sub-district,
+  not geocoded from the actual address), and the circles are illustrative areas, not surveyed boundaries.
 - **Special Considerations** — a button per reservation category with its count; click one to see the
   sorted list of schools that need it.
 - **Submissions** — search/filter all confirmations, edit any field, soft-delete/restore, and for schools

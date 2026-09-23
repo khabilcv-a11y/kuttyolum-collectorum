@@ -9,6 +9,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <style>
   :root {
     --bg: #f4efe2; --card: #fffdf8; --ink: #21261f; --muted: #756b5a; --line: #e6ddc8; --soft: #faf6ea;
@@ -108,6 +113,16 @@
   .chkrow label { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; font-size: 12.5px; background: var(--soft); }
   .modal-err { color: var(--bad); font-size: 12.5px; margin-bottom: 8px; min-height: 16px; }
 
+  /* ---------- map ---------- */
+  #kcMap { height: 560px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: var(--soft); }
+  .map-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 12px; font-size: 12.5px; }
+  .map-legend .sw { display: inline-flex; align-items: center; gap: 6px; }
+  .map-legend .dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.15); }
+  .district-label { background: none; border: none; box-shadow: none; font-weight: 800; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; text-shadow: 0 1px 2px rgba(255,255,255,.9), 0 -1px 2px rgba(255,255,255,.9); }
+  .map-note { color: var(--muted); font-size: 12px; margin-top: 10px; }
+  .leaflet-popup-content b { display: block; margin-bottom: 3px; }
+  .leaflet-popup-content .pill { font-size: 10.5px; }
+
   #toastWrap { position: fixed; right: 14px; bottom: 14px; z-index: 100; display: flex; flex-direction: column; gap: 8px; }
   .toast { background: #1f2937; color: #fff; padding: 10px 14px; border-radius: 10px; font-size: 13px; box-shadow: 0 8px 24px rgba(0,0,0,.3); }
   .toast.error { background: var(--bad); }
@@ -135,6 +150,7 @@
     </div>
     <div class="tabs" id="tabs">
       <button data-tab="overview">Overview</button>
+      <button data-tab="map">Map</button>
       <button data-tab="considerations">Special Considerations</button>
       <button data-tab="submissions">Submissions</button>
       <button data-tab="schools">School Management</button>
@@ -151,6 +167,28 @@
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+
+  // ------------------------------------------------------------------ geography
+  // Approximate reference points (town/panchayat centres), not surveyed
+  // boundaries or exact school addresses — good enough to group and locate
+  // submissions visually on the map.
+  var DISTRICT_GEO = {
+    'Kozhikode':    { center: [11.2900, 75.8100], radius: 15000, color: '#2f6b5e' },
+    'Vatakara':     { center: [11.6100, 75.6300], radius: 14000, color: '#b3781c' },
+    'Thamarassery': { center: [11.4300, 75.9300], radius: 14000, color: '#6a4c93' }
+  };
+  var SUBDISTRICT_GEO = {
+    'Kozhikode City': [11.2588, 75.7804], 'Kozhikode Rural': [11.2200, 75.8500],
+    'Chevayur': [11.2874, 75.8078], 'Feroke': [11.1591, 75.8199],
+    'Vatakara': [11.6089, 75.5928], 'Koyilandy': [11.4681, 75.6819],
+    'Nadapuram': [11.6167, 75.7028], 'Melady': [11.6300, 75.7200],
+    'Thodannur': [11.6000, 75.6100], 'Kunnummal': [11.5500, 75.6500],
+    'Chombala': [11.6603, 75.5735],
+    'Thamarassery': [11.4959, 75.9908], 'Koduvally': [11.4632, 75.9328],
+    'Mukkam': [11.3676, 75.9911], 'Balussery': [11.3978, 75.8256],
+    'Kunnamangalam': [11.3221, 75.8747], 'Perambra': [11.5044, 75.8214]
+  };
+  var mapInstance = null;
 
   // ------------------------------------------------------------------ server
   function api(fn) {
@@ -242,8 +280,10 @@
     Array.prototype.forEach.call($('tabs').querySelectorAll('button'), function (b) {
       b.classList.toggle('on', b.getAttribute('data-tab') === S.tab);
     });
+    if (mapInstance) { mapInstance.remove(); mapInstance = null; }
     var main = $('main');
     if (S.tab === 'overview') main.innerHTML = renderOverview();
+    else if (S.tab === 'map') main.innerHTML = renderMapShell();
     else if (S.tab === 'considerations') main.innerHTML = renderConsiderations();
     else if (S.tab === 'submissions') main.innerHTML = renderSubmissions();
     else main.innerHTML = renderSchools();
@@ -282,6 +322,56 @@
   }
   function kpi(v, l) { return '<div class="kpi"><b>' + esc(v) + '</b><span>' + esc(l) + '</span></div>'; }
   function emptyMsg() { return '<div class="empty">No submissions yet.</div>'; }
+
+  function renderMapShell() {
+    var legend = Object.keys(DISTRICT_GEO).map(function (d) {
+      return '<span class="sw"><span class="dot" style="background:' + DISTRICT_GEO[d].color + '"></span>' + esc(d) + '</span>';
+    }).join('');
+    return '<div class="card">' +
+      '<h2 class="h">School Registrations on the Map</h2>' +
+      '<div class="map-legend">' + legend + '</div>' +
+      '<div id="kcMap"></div>' +
+      '<div class="map-note">Markers are grouped by sub-district reference point, not exact school addresses — the shaded circles are illustrative district areas, not surveyed boundaries. Click a marker (or a cluster) to see the school(s).</div>' +
+      '</div>';
+  }
+
+  function initMap() {
+    if (typeof L === 'undefined' || !$('kcMap')) return;
+    if (mapInstance) { mapInstance.remove(); mapInstance = null; }
+    mapInstance = L.map('kcMap', { scrollWheelZoom: true }).setView([11.35, 75.80], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(mapInstance);
+
+    Object.keys(DISTRICT_GEO).forEach(function (name) {
+      var g = DISTRICT_GEO[name];
+      L.circle(g.center, { radius: g.radius, color: g.color, weight: 2, fillColor: g.color, fillOpacity: 0.06 }).addTo(mapInstance);
+      L.marker(g.center, {
+        icon: L.divIcon({ className: 'district-label', html: esc(name), iconSize: [0, 0] })
+      }).addTo(mapInstance);
+    });
+
+    var cluster = L.markerClusterGroup({ maxClusterRadius: 40 });
+    var active = S.data.submissions.filter(function (s) { return s.status === 'ACTIVE'; });
+    active.forEach(function (s) {
+      var base = SUBDISTRICT_GEO[s.subDistrict] || (DISTRICT_GEO[s.district] && DISTRICT_GEO[s.district].center);
+      if (!base) return;
+      var lat = base[0] + (Math.random() - 0.5) * 0.012;
+      var lng = base[1] + (Math.random() - 0.5) * 0.012;
+      var color = (DISTRICT_GEO[s.district] && DISTRICT_GEO[s.district].color) || '#2f6b5e';
+      var marker = L.circleMarker([lat, lng], { radius: 9, color: '#fff', weight: 2, fillColor: color, fillOpacity: 0.95 });
+      var resTags = s.reservations.map(function (r) { return '<span class="pill">' + esc(r) + '</span>'; }).join(' ');
+      marker.bindPopup(
+        '<b>' + esc(s.schoolName) + '</b>' +
+        esc(s.subDistrict) + ', ' + esc(s.district) + '<br>' +
+        esc(s.institutionType) + ' &middot; ' + s.totalStudents + ' students<br>' +
+        esc(s.contactName) + (s.contactPhone ? ' &middot; ' + esc(s.contactPhone) : '') +
+        (resTags ? '<div style="margin-top:5px">' + resTags + '</div>' : '')
+      );
+      cluster.addLayer(marker);
+    });
+    mapInstance.addLayer(cluster);
+  }
 
   function renderConsiderations() {
     var d = S.data;
@@ -372,7 +462,9 @@
 
   // ------------------------------------------------------------------ wiring
   function wireTab() {
-    if (S.tab === 'considerations') {
+    if (S.tab === 'map') {
+      initMap();
+    } else if (S.tab === 'considerations') {
       Array.prototype.forEach.call($('main').querySelectorAll('[data-res]'), function (b) {
         b.addEventListener('click', function () {
           var r = b.getAttribute('data-res');
