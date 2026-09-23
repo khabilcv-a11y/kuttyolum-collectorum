@@ -109,7 +109,7 @@
 </header>
 
 <main>
-  <div id="loadNote" class="card">Loading form…</div>
+  <div id="loadNote" class="card">Loading form&hellip; <span id="loadNoteSlow" class="hidden">this can take a few seconds the first time.</span></div>
   <form id="form" class="hidden" novalidate>
 
     <div class="card">
@@ -413,7 +413,9 @@
   });
 
   // ------------------------------------------------------------------ boot
+  var slowTimer = setTimeout(function () { $('loadNoteSlow').classList.remove('hidden'); }, 3000);
   api('getFormBootstrap').then(function (boot) {
+    clearTimeout(slowTimer);
     BOOT = boot;
     schoolIdx = boot.schools || [];
     $('titleEn').textContent = boot.meta.title;
@@ -422,7 +424,8 @@
     $('loadNote').classList.add('hidden');
     $('form').classList.remove('hidden');
   }, function (err) {
-    $('loadNote').textContent = 'Could not load the form: ' + (err.message || err);
+    clearTimeout(slowTimer);
+    $('loadNote').innerHTML = 'Could not load the form: ' + (err.message || err) + '<br><button type="button" class="link-btn" onclick="location.reload()">Try again</button>';
   });
 })();
 </script>

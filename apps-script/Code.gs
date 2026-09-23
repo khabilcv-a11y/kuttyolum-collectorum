@@ -50,7 +50,11 @@ var CONFIG = {
   RESERVATIONS: ['Fisheries', 'Girls Only', 'SC / ST', 'Rural Area', 'PWD'],
   NO_RESERVATION: 'No Reservations',
 
-  FORM_CACHE_SECONDS: 60
+  // 6h (CacheService's max) is safe here: every write that changes the
+  // school list or districts (addSchool/updateSchool/setSchoolStatus, and
+  // the setup script property changes) already calls invalidate_(), so a
+  // long TTL only avoids repeat slow cold reads — it never serves stale data.
+  FORM_CACHE_SECONDS: 21600
 };
 
 var HEADERS = {
