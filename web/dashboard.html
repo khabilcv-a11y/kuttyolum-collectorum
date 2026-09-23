@@ -575,45 +575,32 @@
   // ------------------------------------------------------------------ modal: edit submission
   function openSubmissionModal(s) {
     var d = S.data;
-    var classOpts = d.classes.map(function (c) {
-      return '<label><input type="checkbox" value="' + c + '"' + (s.classes.indexOf(c) >= 0 ? ' checked' : '') + '> Class ' + c + '</label>';
-    }).join('');
     var resOpts = d.reservationOptions.concat([d.noReservation]).map(function (r) {
       return '<label><input type="checkbox" value="' + esc(r) + '"' + (s.reservations.indexOf(r) >= 0 ? ' checked' : '') + '> ' + esc(r) + '</label>';
     }).join('');
     var body = '' +
       '<div class="modal-err" id="mErr"></div>' +
       field('School Name', 'text', 'mName', s.schoolName) +
-      '<div class="grid2">' + field('UDISE Code', 'text', 'mUdise', s.udise) + selectField('Institution Type', 'mItype', d.institutionTypes, s.institutionType) + '</div>' +
+      selectField('Institution Type', 'mItype', d.institutionTypes, s.institutionType) +
       '<div class="grid2">' + selectField('Educational District', 'mDistrict', Object.keys(d.districts), s.district) + selectField('Sub-District', 'mSubDistrict', d.districts[s.district] || [], s.subDistrict) + '</div>' +
       field('Address', 'textarea', 'mAddress', s.address) +
-      '<div class="grid2">' + field('Total Students', 'number', 'mStudents', s.totalStudents) + field('Email', 'text', 'mEmail', s.email) + '</div>' +
-      '<label class="f"><span class="lb">Classes</span><div class="chkrow" id="mClasses">' + classOpts + '</div></label>' +
+      field('Total Students', 'number', 'mStudents', s.totalStudents) +
       '<div class="grid2">' + field('Contact Person', 'text', 'mContactName', s.contactName) + field('Contact Phone', 'text', 'mContactPhone', s.contactPhone) + '</div>' +
-      '<div class="grid2">' + field('Teacher Coordinator', 'text', 'mCoordName', s.coordinatorName) + field('Coordinator Phone', 'text', 'mCoordPhone', s.coordinatorPhone) + '</div>' +
-      '<label class="f"><span class="lb">Reservations</span><div class="chkrow" id="mRes">' + resOpts + '</div></label>' +
-      '<div class="grid2">' + ynField('Accessibility support needed', 'mAccess', s.accessibility) + ynField('Parent consent obtained', 'mParent', s.parentConsent) + '</div>' +
-      ynField('Photo/video consent obtained', 'mPhoto', s.photoConsent) +
-      field('Medical / emergency info', 'textarea', 'mMedical', s.medicalInfo);
+      '<label class="f"><span class="lb">Reservations</span><div class="chkrow" id="mRes">' + resOpts + '</div></label>';
     openModal('Edit submission · ' + s.schoolName, body, function (root) {
       wireDistrictCascade(root, 'mDistrict', 'mSubDistrict', d.districts);
       wireReservationExclusivity(root, 'mRes', d.noReservation);
     }, function () {
       var root = $('modalRoot');
-      var classes = checkedValues(root, '#mClasses');
       var reservations = checkedValues(root, '#mRes');
       var changes = {
-        schoolName: val(root, 'mName'), udise: val(root, 'mUdise'), institutionType: val(root, 'mItype'),
+        schoolName: val(root, 'mName'), institutionType: val(root, 'mItype'),
         district: val(root, 'mDistrict'), subDistrict: val(root, 'mSubDistrict'), address: val(root, 'mAddress'),
-        totalStudents: Number(val(root, 'mStudents')), classes: classes,
+        totalStudents: Number(val(root, 'mStudents')),
         contactName: val(root, 'mContactName'), contactPhone: val(root, 'mContactPhone'),
-        coordinatorName: val(root, 'mCoordName'), coordinatorPhone: val(root, 'mCoordPhone'),
-        email: val(root, 'mEmail'), reservations: reservations,
-        accessibility: ynVal(root, 'mAccess'), parentConsent: ynVal(root, 'mParent'), photoConsent: ynVal(root, 'mPhoto'),
-        medicalInfo: val(root, 'mMedical')
+        reservations: reservations
       };
       if (!changes.schoolName) { $('mErr').textContent = 'School name is required.'; return; }
-      if (!classes.length) { $('mErr').textContent = 'Select at least one class.'; return; }
       if (!reservations.length) { $('mErr').textContent = 'Select at least one reservation option (or No Reservations).'; return; }
       call('updateSubmission', s.id, changes).then(function (res) { closeModal(); afterWrite(res); }, function (e) { $('mErr').textContent = e.message || String(e); });
     });
