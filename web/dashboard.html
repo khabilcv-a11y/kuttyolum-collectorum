@@ -75,6 +75,7 @@
   .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
   .filters input, .filters select { padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
   .filters input[type=text] { flex: 1; min-width: 180px; }
+  .filters .sort-lb { display: inline-flex; align-items: center; color: var(--muted); font-size: 12.5px; }
   table.dt { width: 100%; border-collapse: collapse; font-size: 13px; }
   table.dt th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 8px; border-bottom: 2px solid var(--line); white-space: nowrap; }
   table.dt td { padding: 9px 8px; border-bottom: 1px solid var(--soft); vertical-align: top; }
@@ -152,6 +153,7 @@
       <button data-tab="map">Map</button>
       <button data-tab="considerations">Special Considerations</button>
       <button data-tab="submissions">Submissions</button>
+      <button data-tab="reports">Reports</button>
       <button data-tab="schools">School Management</button>
     </div>
   </div>
@@ -267,7 +269,10 @@
   function forget(k) { try { sessionStorage.removeItem(k); localStorage.removeItem(k); } catch (e) {} }
 
   // ------------------------------------------------------------------ state
-  var S = { pin: '', official: '', data: null, tab: 'overview', resFilter: null, subSearch: '', subDistrictF: '', subStatusF: 'ACTIVE', schoolSearch: '' };
+  var S = {
+    pin: '', official: '', data: null, tab: 'overview', resFilter: null, subSearch: '', subDistrictF: '', subStatusF: 'ACTIVE', schoolSearch: '',
+    rep: { category: '', district: '', subDistrict: '', institutionType: '', status: 'ACTIVE', sortBy: 'schoolName', sortDir: 'asc' }
+  };
 
   function logout() {
     forget(LS_PIN); S.pin = ''; S.data = null;
@@ -319,6 +324,7 @@
     else if (S.tab === 'map') main.innerHTML = renderMapShell();
     else if (S.tab === 'considerations') main.innerHTML = renderConsiderations();
     else if (S.tab === 'submissions') main.innerHTML = renderSubmissions();
+    else if (S.tab === 'reports') main.innerHTML = renderReports();
     else main.innerHTML = renderSchools();
     wireTab();
   }
@@ -526,6 +532,97 @@
       body + '</div>';
   }
 
+  // ------------------------------------------------------------------ reports
+  var SORT_FIELDS = [
+    ['schoolName', 'School Name'], ['totalStudents', 'Total Students'], ['district', 'Educational District'],
+    ['subDistrict', 'Sub-District'], ['institutionType', 'Institution Type'], ['ts', 'Submission Date']
+  ];
+
+  function reportRows() {
+    var r = S.rep;
+    var rows = (S.data.submissions || []).filter(function (s) {
+      if (r.status !== 'ALL' && s.status !== r.status) return false;
+      if (r.category && s.reservations.indexOf(r.category) < 0) return false;
+      if (r.district && s.district !== r.district) return false;
+      if (r.subDistrict && s.subDistrict !== r.subDistrict) return false;
+      if (r.institutionType && s.institutionType !== r.institutionType) return false;
+      return true;
+    });
+    var dir = r.sortDir === 'desc' ? -1 : 1, key = r.sortBy;
+    rows.sort(function (a, b) {
+      var av = a[key], bv = b[key];
+      if (typeof av === 'number' || typeof bv === 'number') return ((av || 0) - (bv || 0)) * dir;
+      return String(av || '').toLowerCase().localeCompare(String(bv || '').toLowerCase()) * dir;
+    });
+    return rows;
+  }
+
+  function renderReports() {
+    var d = S.data, r = S.rep;
+    var rows = reportRows();
+    var opt = function (v, label, sel) { return '<option value="' + esc(v) + '"' + (sel ? ' selected' : '') + '>' + esc(label) + '</option>'; };
+    var catOpts = opt('', 'All categories', !r.category) + d.reservationOptions.concat([d.noReservation]).map(function (c) { return opt(c, c, r.category === c); }).join('');
+    var distOpts = opt('', 'All districts', !r.district) + Object.keys(d.districts).map(function (dd) { return opt(dd, dd, r.district === dd); }).join('');
+    var subOpts = opt('', 'All sub-districts', !r.subDistrict) + (r.district ? d.districts[r.district] : []).map(function (sd) { return opt(sd, sd, r.subDistrict === sd); }).join('');
+    var itypeOpts = opt('', 'All institution types', !r.institutionType) + d.institutionTypes.map(function (t) { return opt(t, t, r.institutionType === t); }).join('');
+    var statusOpts = opt('ACTIVE', 'Active', r.status === 'ACTIVE') + opt('DELETED', 'Deleted', r.status === 'DELETED') + opt('ALL', 'All', r.status === 'ALL');
+    var sortOpts = SORT_FIELDS.map(function (f) { return opt(f[0], f[1], r.sortBy === f[0]); }).join('');
+    var dirOpts = opt('asc', 'Ascending', r.sortDir === 'asc') + opt('desc', 'Descending', r.sortDir === 'desc');
+    var body = !rows.length ? '<div class="empty">No submissions match these filters.</div>' : '<table class="dt"><thead><tr>' +
+      '<th>School</th><th>District / Sub-District</th><th>Institution</th><th>Students</th><th>Reservations</th><th>Contact</th><th>Status</th>' +
+      '</tr></thead><tbody>' + rows.map(function (s) {
+        return '<tr><td><b>' + esc(s.schoolName) + '</b></td>' +
+          '<td>' + esc(s.district) + ' / ' + esc(s.subDistrict) + '</td>' +
+          '<td>' + esc(s.institutionType) + '</td>' +
+          '<td>' + s.totalStudents + '</td>' +
+          '<td>' + s.reservations.map(function (rr) { return '<span class="pill">' + esc(rr) + '</span>'; }).join('') + '</td>' +
+          '<td>' + esc(s.contactName) + '<div style="color:var(--muted);font-size:11px">' + esc(s.contactPhone) + '</div></td>' +
+          '<td>' + (s.status === 'ACTIVE' ? '<span class="pill ok">ACTIVE</span>' : '<span class="pill del">DELETED</span>') + '</td></tr>';
+      }).join('') + '</tbody></table>';
+    return '<div class="card">' +
+      '<h2 class="h">Download Report</h2>' +
+      '<div class="filters">' +
+        '<select id="repCategory">' + catOpts + '</select>' +
+        '<select id="repDistrict">' + distOpts + '</select>' +
+        '<select id="repSubDistrict">' + subOpts + '</select>' +
+        '<select id="repInstitution">' + itypeOpts + '</select>' +
+        '<select id="repStatus">' + statusOpts + '</select>' +
+      '</div>' +
+      '<div class="filters">' +
+        '<span class="sort-lb">Sort by</span><select id="repSortBy">' + sortOpts + '</select>' +
+        '<span class="sort-lb">Order</span><select id="repSortDir">' + dirOpts + '</select>' +
+        '<button class="btn" id="repDownloadBtn" type="button">Download CSV (' + rows.length + ')</button>' +
+      '</div>' +
+      '<h2 class="h">Preview<span class="cnt">' + rows.length + ' school(s)</span></h2>' + body +
+      '</div>';
+  }
+
+  function csvCell_(v) {
+    var s = String(v == null ? '' : v);
+    if (/[",\n]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+
+  function downloadReportCSV() {
+    var rows = reportRows();
+    var headers = ['Submission ID', 'Timestamp', 'School Name', 'School Source', 'Educational District', 'Sub-District',
+      'Institution Type', 'Total Students', 'Contact Person', 'Contact Phone', 'Reservations', 'Status'];
+    var lines = [headers.map(csvCell_).join(',')];
+    rows.forEach(function (s) {
+      lines.push([
+        s.id, s.ts ? new Date(s.ts).toISOString() : '', s.schoolName, s.schoolSource, s.district, s.subDistrict,
+        s.institutionType, s.totalStudents, s.contactName, s.contactPhone, s.reservations.join('; '), s.status
+      ].map(csvCell_).join(','));
+    });
+    var csv = '﻿' + lines.join('\r\n'); // BOM so Excel reads UTF-8 (Malayalam names, etc.) correctly
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'kuttyolum-report-' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+  }
+
   // ------------------------------------------------------------------ wiring
   function wireTab() {
     if (S.tab === 'map') {
@@ -543,6 +640,15 @@
       $('subDistrictF').addEventListener('change', function () { S.subDistrictF = this.value; render(); });
       $('subStatusF').addEventListener('change', function () { S.subStatusF = this.value; render(); });
       $('main').addEventListener('click', onSubmissionAction);
+    } else if (S.tab === 'reports') {
+      $('repCategory').addEventListener('change', function () { S.rep.category = this.value; render(); });
+      $('repDistrict').addEventListener('change', function () { S.rep.district = this.value; S.rep.subDistrict = ''; render(); });
+      $('repSubDistrict').addEventListener('change', function () { S.rep.subDistrict = this.value; render(); });
+      $('repInstitution').addEventListener('change', function () { S.rep.institutionType = this.value; render(); });
+      $('repStatus').addEventListener('change', function () { S.rep.status = this.value; render(); });
+      $('repSortBy').addEventListener('change', function () { S.rep.sortBy = this.value; render(); });
+      $('repSortDir').addEventListener('change', function () { S.rep.sortDir = this.value; render(); });
+      $('repDownloadBtn').addEventListener('click', downloadReportCSV);
     } else if (S.tab === 'schools') {
       $('schoolSearch').addEventListener('input', function () { S.schoolSearch = this.value; render(); $('schoolSearch').focus(); $('schoolSearch').selectionStart = $('schoolSearch').value.length; });
       $('addSchoolBtn').addEventListener('click', function () { openSchoolModal(null); });
