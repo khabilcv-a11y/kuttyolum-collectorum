@@ -104,7 +104,7 @@
     <div class="eyebrow">District Administration · Kozhikode</div>
     <h1 id="titleEn">Kuttyolum Collectorum</h1>
     <p class="mal" id="titleMal">കുട്ട്യോളും കളക്ടറും — Reservation Preference Form</p>
-    <p class="intro">Please confirm your school's participation and let us know about any reservation category that applies, so seating and logistics can be planned accordingly. All information is used solely for official purposes.</p>
+    <p class="intro">Please confirm your school's participation and share a few details about your institution, so seating and logistics can be planned accordingly. All information is used solely for official purposes.</p>
   </div>
 </header>
 
@@ -182,13 +182,32 @@
     </div>
 
     <div class="card">
-      <div class="section-title">Special Reservations</div>
-      <div class="q" id="q-reservations">
+      <div class="section-title">Additional Institution Details</div>
+      <div class="q" id="q-setting">
         <div class="num">09</div>
-        <label class="lbl">Reservations, if any</label>
-        <div class="hint">Select all that apply, or choose "No Reservations".</div>
-        <div class="chips" id="reservationChips"></div>
-        <div class="err-field">Select at least one option, or "No Reservations".</div>
+        <label class="lbl">Please indicate the geographical setting in which your institution is primarily located <span class="req">*</span></label>
+        <div class="chips wide" id="settingChips"></div>
+        <div class="err-field">Select a geographical setting.</div>
+      </div>
+      <div class="q" id="q-demographics">
+        <div class="num">10</div>
+        <label class="lbl">What is the institutional classification regarding student enrollment? <span class="req">*</span></label>
+        <div class="chips wide" id="demographicsChips"></div>
+        <div class="err-field">Select a classification.</div>
+      </div>
+      <div class="q" id="q-community">
+        <div class="num">11</div>
+        <label class="lbl">Does your institution serve a significant demographic of students from historically marginalized or designated communities (such as Scheduled Castes/Scheduled Tribes)? <span class="req">*</span></label>
+        <div class="chips wide" id="communityChips"></div>
+        <div class="hint">Optional: you may note an approximate percentage to help us tailor outreach resources effectively.</div>
+        <input type="text" id="communityNote" placeholder="e.g. approx. 20% (optional)">
+        <div class="err-field">Please answer Yes or No.</div>
+      </div>
+      <div class="q" id="q-specialized">
+        <div class="num">12</div>
+        <label class="lbl">Is your institution designated, supported, or primarily structured to cater to specialized student groups (e.g., coastal/fishing community welfare schools or similar targeted programs)? <span class="req">*</span></label>
+        <div class="chips wide" id="specializedChips"></div>
+        <div class="err-field">Please answer Yes or No.</div>
       </div>
     </div>
 
@@ -243,7 +262,7 @@
 
   // ------------------------------------------------------------------ state
   var BOOT = null;
-  var SEL = { school: null, matched: false, reservations: {}, itype: '' };
+  var SEL = { school: null, matched: false, itype: '', setting: '', demographics: '', community: '', specialized: '' };
 
   function chip(container, text, on, onClick, disabled) {
     var b = document.createElement('button');
@@ -261,21 +280,24 @@
     });
   }
 
-  function renderReservations() {
-    var c = $('reservationChips'); c.innerHTML = '';
-    var noRes = BOOT.noReservation;
-    var noOn = !!SEL.reservations[noRes];
-    BOOT.reservationOptions.forEach(function (r) {
-      chip(c, r, !!SEL.reservations[r], function () {
-        if (SEL.reservations[r]) delete SEL.reservations[r]; else SEL.reservations[r] = true;
-        delete SEL.reservations[noRes];
-        renderReservations();
-      }, noOn);
-    });
-    chip(c, noRes, noOn, function () {
-      if (noOn) { delete SEL.reservations[noRes]; } else { SEL.reservations = {}; SEL.reservations[noRes] = true; }
-      renderReservations();
-    });
+  function renderSetting() {
+    var c = $('settingChips'); c.innerHTML = '';
+    BOOT.settings.forEach(function (v) { chip(c, v, SEL.setting === v, function () { SEL.setting = v; renderSetting(); }); });
+  }
+
+  function renderDemographics() {
+    var c = $('demographicsChips'); c.innerHTML = '';
+    BOOT.demographics.forEach(function (v) { chip(c, v, SEL.demographics === v, function () { SEL.demographics = v; renderDemographics(); }); });
+  }
+
+  function renderCommunity() {
+    var c = $('communityChips'); c.innerHTML = '';
+    ['Yes', 'No'].forEach(function (v) { chip(c, v, SEL.community === v, function () { SEL.community = v; renderCommunity(); }); });
+  }
+
+  function renderSpecialized() {
+    var c = $('specializedChips'); c.innerHTML = '';
+    ['Yes', 'No'].forEach(function (v) { chip(c, v, SEL.specialized === v, function () { SEL.specialized = v; renderSpecialized(); }); });
   }
 
   function renderDistricts() {
@@ -373,7 +395,10 @@
     need('q-students', $('totalStudents').value !== '' && Number($('totalStudents').value) >= 0);
     need('q-contactName', $('contactName').value.trim().length > 0);
     need('q-contactPhone', $('contactPhone').value.replace(/\D/g, '').length >= 10);
-    need('q-reservations', Object.keys(SEL.reservations).length > 0);
+    need('q-setting', !!SEL.setting);
+    need('q-demographics', !!SEL.demographics);
+    need('q-community', !!SEL.community);
+    need('q-specialized', !!SEL.specialized);
     return ok;
   }
 
@@ -396,7 +421,11 @@
       totalStudents: Number($('totalStudents').value),
       contactName: $('contactName').value.trim(),
       contactPhone: $('contactPhone').value.trim(),
-      reservations: Object.keys(SEL.reservations),
+      setting: SEL.setting,
+      demographics: SEL.demographics,
+      communityRepresentation: SEL.community,
+      communityNote: $('communityNote').value.trim(),
+      specializedFocus: SEL.specialized,
       declaration: true
     };
     $('submitBtn').disabled = true; $('submitBtn').textContent = 'Submitting…';
@@ -420,7 +449,7 @@
     schoolIdx = boot.schools || [];
     $('titleEn').textContent = boot.meta.title;
     document.title = boot.meta.title + ' · Reservation Preference Form';
-    renderInstitutionType(); renderReservations(); renderDistricts();
+    renderInstitutionType(); renderSetting(); renderDemographics(); renderCommunity(); renderSpecialized(); renderDistricts();
     $('loadNote').classList.add('hidden');
     $('form').classList.remove('hidden');
   }, function (err) {

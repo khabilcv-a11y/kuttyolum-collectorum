@@ -187,6 +187,18 @@
   };
   var S_MAP = { selected: null };
 
+  // "Special considerations" derived client-side from the four milder
+  // profile questions — mirrors CONSIDERATIONS in apps-script/Code.gs.
+  var CONSIDERATIONS = [
+    { label: 'Rural Area', test: function (s) { return s.setting === 'Rural Area'; } },
+    { label: 'Girls-Only Institution', test: function (s) { return s.demographics === 'Girls-Only Institution'; } },
+    { label: 'SC/ST Community Representation', test: function (s) { return s.communityRepresentation; } },
+    { label: 'Fishing / Coastal Community Focus', test: function (s) { return s.specializedFocus; } }
+  ];
+  function considerationTags(s) {
+    return CONSIDERATIONS.filter(function (c) { return c.test(s); }).map(function (c) { return c.label; });
+  }
+
   // ---- tiny self-contained Voronoi (no map library needed): clip a big box
   // per point against every other point's perpendicular bisector.
   function clipHalf(poly, a, b, c) {
@@ -344,7 +356,7 @@
         kpi(k.schools, 'Schools confirmed') +
         kpi(k.totalStudents, 'Total students') +
         kpi(k.districts, 'Districts covered') +
-        kpi(k.needingReservation, 'With a reservation need') +
+        kpi(k.needingConsideration, 'With a special consideration') +
       '</div>' +
       '<div class="two-col">' +
         '<div class="card"><h2 class="h">By Educational District</h2>' + (d.byDistrict.length ? bar(d.byDistrict) : emptyMsg()) + '</div>' +
@@ -447,12 +459,12 @@
 
   function renderConsiderations() {
     var d = S.data;
-    var grid = d.reservations.map(function (r) {
+    var grid = d.considerations.map(function (r) {
       var on = S.resFilter === r.name;
       return '<button type="button" class="res-btn' + (on ? ' on' : '') + '" data-res="' + esc(r.name) + '"><b>' + r.count + '</b><span>' + esc(r.name) + '</span></button>';
     }).join('');
     var active = d.submissions.filter(function (s) { return s.status === 'ACTIVE'; });
-    var list = S.resFilter ? active.filter(function (s) { return s.reservations.indexOf(S.resFilter) >= 0; })
+    var list = S.resFilter ? active.filter(function (s) { return considerationTags(s).indexOf(S.resFilter) >= 0; })
       .sort(function (a, b) { return a.schoolName.localeCompare(b.schoolName); }) : [];
     var table = !S.resFilter ? '<div class="empty">Select a category above to see the schools that need it.</div>' :
       (!list.length ? '<div class="empty">No schools under "' + esc(S.resFilter) + '".</div>' : renderSchoolListTable(list));
@@ -479,7 +491,7 @@
     var extraKeys = {}; d.schoolsExtra.forEach(function (s) { extraKeys[s.name.toLowerCase()] = true; });
     var districtOpts = '<option value="">All districts</option>' + Object.keys(d.districts).map(function (dd) { return '<option value="' + esc(dd) + '"' + (S.subDistrictF === dd ? ' selected' : '') + '>' + esc(dd) + '</option>'; }).join('');
     var body = !rows.length ? '<div class="empty">No submissions match.</div>' : '<table class="dt"><thead><tr>' +
-      '<th>School</th><th>District</th><th>Institution</th><th>Students</th><th>Reservations</th><th>Contact</th><th>Status</th><th></th>' +
+      '<th>School</th><th>District</th><th>Institution</th><th>Students</th><th>Special Considerations</th><th>Contact</th><th>Status</th><th></th>' +
       '</tr></thead><tbody>' + rows.map(function (s) {
         var canPromote = s.schoolSource === 'NEW' && !extraKeys[s.schoolName.toLowerCase()];
         return '<tr>' +
@@ -487,7 +499,7 @@
           '<td>' + esc(s.district) + '</td>' +
           '<td>' + esc(s.institutionType) + '</td>' +
           '<td>' + s.totalStudents + '</td>' +
-          '<td>' + s.reservations.map(function (r) { return '<span class="pill">' + esc(r) + '</span>'; }).join('') + '</td>' +
+          '<td>' + considerationTags(s).map(function (r) { return '<span class="pill">' + esc(r) + '</span>'; }).join('') + '</td>' +
           '<td>' + esc(s.contactName) + '<div style="color:var(--muted);font-size:11px">' + esc(s.contactPhone) + '</div></td>' +
           '<td>' + (s.status === 'ACTIVE' ? '<span class="pill ok">ACTIVE</span>' : '<span class="pill del">DELETED</span>') + '</td>' +
           '<td><div class="rowbtns">' +
@@ -542,7 +554,7 @@
     var r = S.rep;
     var rows = (S.data.submissions || []).filter(function (s) {
       if (r.status !== 'ALL' && s.status !== r.status) return false;
-      if (r.category && s.reservations.indexOf(r.category) < 0) return false;
+      if (r.category && considerationTags(s).indexOf(r.category) < 0) return false;
       if (r.district && s.district !== r.district) return false;
       if (r.subDistrict && s.subDistrict !== r.subDistrict) return false;
       if (r.institutionType && s.institutionType !== r.institutionType) return false;
@@ -561,7 +573,7 @@
     var d = S.data, r = S.rep;
     var rows = reportRows();
     var opt = function (v, label, sel) { return '<option value="' + esc(v) + '"' + (sel ? ' selected' : '') + '>' + esc(label) + '</option>'; };
-    var catOpts = opt('', 'All categories', !r.category) + d.reservationOptions.concat([d.noReservation]).map(function (c) { return opt(c, c, r.category === c); }).join('');
+    var catOpts = opt('', 'All special considerations', !r.category) + CONSIDERATIONS.map(function (c) { return opt(c.label, c.label, r.category === c.label); }).join('');
     var distOpts = opt('', 'All districts', !r.district) + Object.keys(d.districts).map(function (dd) { return opt(dd, dd, r.district === dd); }).join('');
     var subOpts = opt('', 'All sub-districts', !r.subDistrict) + (r.district ? d.districts[r.district] : []).map(function (sd) { return opt(sd, sd, r.subDistrict === sd); }).join('');
     var itypeOpts = opt('', 'All institution types', !r.institutionType) + d.institutionTypes.map(function (t) { return opt(t, t, r.institutionType === t); }).join('');
@@ -569,13 +581,13 @@
     var sortOpts = SORT_FIELDS.map(function (f) { return opt(f[0], f[1], r.sortBy === f[0]); }).join('');
     var dirOpts = opt('asc', 'Ascending', r.sortDir === 'asc') + opt('desc', 'Descending', r.sortDir === 'desc');
     var body = !rows.length ? '<div class="empty">No submissions match these filters.</div>' : '<table class="dt"><thead><tr>' +
-      '<th>School</th><th>District / Sub-District</th><th>Institution</th><th>Students</th><th>Reservations</th><th>Contact</th><th>Status</th>' +
+      '<th>School</th><th>District / Sub-District</th><th>Institution</th><th>Students</th><th>Special Considerations</th><th>Contact</th><th>Status</th>' +
       '</tr></thead><tbody>' + rows.map(function (s) {
         return '<tr><td><b>' + esc(s.schoolName) + '</b></td>' +
           '<td>' + esc(s.district) + ' / ' + esc(s.subDistrict) + '</td>' +
           '<td>' + esc(s.institutionType) + '</td>' +
           '<td>' + s.totalStudents + '</td>' +
-          '<td>' + s.reservations.map(function (rr) { return '<span class="pill">' + esc(rr) + '</span>'; }).join('') + '</td>' +
+          '<td>' + considerationTags(s).map(function (rr) { return '<span class="pill">' + esc(rr) + '</span>'; }).join('') + '</td>' +
           '<td>' + esc(s.contactName) + '<div style="color:var(--muted);font-size:11px">' + esc(s.contactPhone) + '</div></td>' +
           '<td>' + (s.status === 'ACTIVE' ? '<span class="pill ok">ACTIVE</span>' : '<span class="pill del">DELETED</span>') + '</td></tr>';
       }).join('') + '</tbody></table>';
@@ -606,12 +618,14 @@
   function downloadReportCSV() {
     var rows = reportRows();
     var headers = ['Submission ID', 'Timestamp', 'School Name', 'School Source', 'Educational District', 'Sub-District',
-      'Institution Type', 'Total Students', 'Contact Person', 'Contact Phone', 'Reservations', 'Status'];
+      'Institution Type', 'Total Students', 'Contact Person', 'Contact Phone', 'Geographic Setting', 'Student Demographics',
+      'SC/ST Community Representation', 'Community Representation Note', 'Fishing/Coastal Community Focus', 'Status'];
     var lines = [headers.map(csvCell_).join(',')];
     rows.forEach(function (s) {
       lines.push([
         s.id, s.ts ? new Date(s.ts).toISOString() : '', s.schoolName, s.schoolSource, s.district, s.subDistrict,
-        s.institutionType, s.totalStudents, s.contactName, s.contactPhone, s.reservations.join('; '), s.status
+        s.institutionType, s.totalStudents, s.contactName, s.contactPhone, s.setting, s.demographics,
+        s.communityRepresentation ? 'Yes' : 'No', s.communityNote, s.specializedFocus ? 'Yes' : 'No', s.status
       ].map(csvCell_).join(','));
     });
     var csv = '﻿' + lines.join('\r\n'); // BOM so Excel reads UTF-8 (Malayalam names, etc.) correctly
@@ -681,9 +695,6 @@
   // ------------------------------------------------------------------ modal: edit submission
   function openSubmissionModal(s) {
     var d = S.data;
-    var resOpts = d.reservationOptions.concat([d.noReservation]).map(function (r) {
-      return '<label><input type="checkbox" value="' + esc(r) + '"' + (s.reservations.indexOf(r) >= 0 ? ' checked' : '') + '> ' + esc(r) + '</label>';
-    }).join('');
     var body = '' +
       '<div class="modal-err" id="mErr"></div>' +
       field('School Name', 'text', 'mName', s.schoolName) +
@@ -692,22 +703,25 @@
       field('Address', 'textarea', 'mAddress', s.address) +
       field('Total Students', 'number', 'mStudents', s.totalStudents) +
       '<div class="grid2">' + field('Contact Person', 'text', 'mContactName', s.contactName) + field('Contact Phone', 'text', 'mContactPhone', s.contactPhone) + '</div>' +
-      '<label class="f"><span class="lb">Reservations</span><div class="chkrow" id="mRes">' + resOpts + '</div></label>';
+      selectField('Geographic Setting', 'mSetting', d.settings, s.setting) +
+      selectField('Student Demographics', 'mDemographics', d.demographics, s.demographics) +
+      ynField('SC/ST community representation', 'mCommunity', s.communityRepresentation) +
+      field('Community representation note (optional)', 'text', 'mCommunityNote', s.communityNote) +
+      ynField('Fishing/coastal community focus', 'mSpecialized', s.specializedFocus);
     openModal('Edit submission · ' + s.schoolName, body, function (root) {
       wireDistrictCascade(root, 'mDistrict', 'mSubDistrict', d.districts);
-      wireReservationExclusivity(root, 'mRes', d.noReservation);
     }, function () {
       var root = $('modalRoot');
-      var reservations = checkedValues(root, '#mRes');
       var changes = {
         schoolName: val(root, 'mName'), institutionType: val(root, 'mItype'),
         district: val(root, 'mDistrict'), subDistrict: val(root, 'mSubDistrict'), address: val(root, 'mAddress'),
         totalStudents: Number(val(root, 'mStudents')),
         contactName: val(root, 'mContactName'), contactPhone: val(root, 'mContactPhone'),
-        reservations: reservations
+        setting: val(root, 'mSetting'), demographics: val(root, 'mDemographics'),
+        communityRepresentation: ynVal(root, 'mCommunity'), communityNote: val(root, 'mCommunityNote'),
+        specializedFocus: ynVal(root, 'mSpecialized')
       };
       if (!changes.schoolName) { $('mErr').textContent = 'School name is required.'; return; }
-      if (!reservations.length) { $('mErr').textContent = 'Select at least one reservation option (or No Reservations).'; return; }
       call('updateSubmission', s.id, changes).then(function (res) { closeModal(); afterWrite(res); }, function (e) { $('mErr').textContent = e.message || String(e); });
     });
   }
@@ -754,26 +768,11 @@
   }
   function val(root, id) { var e = root.querySelector('#' + id); return e ? e.value.trim() : ''; }
   function ynVal(root, name) { var e = root.querySelector('input[name="' + name + '"]:checked'); return !!e && e.value === 'Yes'; }
-  function checkedValues(root, sel) {
-    return Array.prototype.map.call(root.querySelectorAll(sel + ' input:checked'), function (i) { return i.value; });
-  }
   function wireDistrictCascade(root, distId, subId, districts) {
     var distEl = root.querySelector('#' + distId), subEl = root.querySelector('#' + subId);
     distEl.addEventListener('change', function () {
       var list = districts[this.value] || [];
       subEl.innerHTML = '<option value="">Select…</option>' + list.map(function (s) { return '<option value="' + esc(s) + '">' + esc(s) + '</option>'; }).join('');
-    });
-  }
-  function wireReservationExclusivity(root, boxSel, noRes) {
-    var box = root.querySelector('#' + boxSel); if (!box) return;
-    box.addEventListener('change', function (e) {
-      if (e.target.type !== 'checkbox') return;
-      var boxes = box.querySelectorAll('input[type=checkbox]');
-      if (e.target.value === noRes && e.target.checked) {
-        boxes.forEach(function (b) { if (b !== e.target) b.checked = false; });
-      } else if (e.target.checked) {
-        boxes.forEach(function (b) { if (b.value === noRes) b.checked = false; });
-      }
     });
   }
 

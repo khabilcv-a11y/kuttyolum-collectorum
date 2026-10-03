@@ -47,8 +47,8 @@ var CONFIG = {
 
   CLASSES: ['5', '6', '7', '8', '9', '10', '11', '12'],
   INSTITUTION_TYPES: ['Aided', 'Unaided', 'Private'],
-  RESERVATIONS: ['Fisheries', 'Girls Only', 'SC / ST', 'Rural Area', 'PWD'],
-  NO_RESERVATION: 'No Reservations',
+  SETTINGS: ['Rural Area', 'Semi-Urban / Urban Area'],
+  DEMOGRAPHICS: ['Girls-Only Institution', 'Co-educational Institution'],
 
   // 6h (CacheService's max) is safe here: every write that changes the
   // school list or districts (addSchool/updateSchool/setSchoolStatus, and
@@ -63,13 +63,24 @@ var HEADERS = {
   SUBMISSIONS: ['Submission ID', 'Timestamp', 'School Name', 'School Source', 'UDISE Code', 'Institution Type',
                 'Educational District', 'Sub-District', 'Address', 'Total Students', 'Classes Participating',
                 'Contact Person Name', 'Contact Person Mobile', 'Teacher Coordinator Name', 'Teacher Coordinator Mobile',
-                'Email', 'Reservations', 'Accessibility Support', 'Parent Consent', 'Photo Video Consent',
+                'Email', 'Geographic Setting', 'Student Demographics', 'SC/ST Community Representation',
+                'Community Representation Note', 'Fishing/Coastal Community Focus',
+                'Accessibility Support', 'Parent Consent', 'Photo Video Consent',
                 'Medical Info', 'Declaration', 'Status', 'Updated At', 'Updated By'],
   AUDIT: ['Timestamp', 'Action', 'Submission ID', 'Previous Value', 'New Value', 'User']
 };
 
 var STATUS = { ACTIVE: 'ACTIVE', DELETED: 'DELETED' };
 var FORM_CACHE_KEY = 'kc_form_v1';
+
+// "Special considerations" the dashboard surfaces as filterable tags, derived
+// from the four milder profile questions rather than a blunt category list.
+var CONSIDERATIONS = [
+  { label: 'Rural Area', test: function (s) { return s.setting === 'Rural Area'; } },
+  { label: 'Girls-Only Institution', test: function (s) { return s.demographics === 'Girls-Only Institution'; } },
+  { label: 'SC/ST Community Representation', test: function (s) { return s.communityRepresentation; } },
+  { label: 'Fishing / Coastal Community Focus', test: function (s) { return s.specializedFocus; } }
+];
 
 
 /* =========================================================================
@@ -160,8 +171,8 @@ function getFormBootstrap() {
     districts: CONFIG.DISTRICTS,
     classes: CONFIG.CLASSES,
     institutionTypes: CONFIG.INSTITUTION_TYPES,
-    reservationOptions: CONFIG.RESERVATIONS,
-    noReservation: CONFIG.NO_RESERVATION,
+    settings: CONFIG.SETTINGS,
+    demographics: CONFIG.DEMOGRAPHICS,
     schools: mergedSchools_(false).map(function (s) {
       return { name: s.name, udise: s.udise, contact: s.contact, phone: s.phone, address: s.address };
     })
@@ -175,7 +186,8 @@ function getFormBootstrap() {
  *   schoolName, schoolSource: 'LISTED'|'NEW', udise, institutionType,
  *   district, subDistrict, address, totalStudents, classes: [...],
  *   contactName, contactPhone, coordinatorName, coordinatorPhone, email,
- *   reservations: [...], accessibility, parentConsent, photoConsent,
+ *   setting, demographics, communityRepresentation: 'Yes'|'No', communityNote,
+ *   specializedFocus: 'Yes'|'No', accessibility, parentConsent, photoConsent,
  *   medicalInfo, declaration
  * }
  */
@@ -214,12 +226,18 @@ function submitReservation(payload) {
     var coordPhone = clean_(payload.coordinatorPhone);
     var email = clean_(payload.email);
 
-    var reservations = [].concat(payload.reservations || []).map(clean_).filter(Boolean);
-    if (reservations.indexOf(CONFIG.NO_RESERVATION) >= 0) reservations = [CONFIG.NO_RESERVATION];
-    if (!reservations.length) throw new Error('Select at least one reservation option, or "No Reservations".');
-    reservations.forEach(function (r) {
-      if (r !== CONFIG.NO_RESERVATION && CONFIG.RESERVATIONS.indexOf(r) < 0) throw new Error('Unknown reservation category: ' + r);
-    });
+    var setting = clean_(payload.setting);
+    if (CONFIG.SETTINGS.indexOf(setting) < 0) throw new Error('Select the geographical setting of the institution.');
+
+    var demographics = clean_(payload.demographics);
+    if (CONFIG.DEMOGRAPHICS.indexOf(demographics) < 0) throw new Error('Select the institution\'s student enrollment classification.');
+
+    var communityRaw = clean_(payload.communityRepresentation);
+    if (['Yes', 'No'].indexOf(communityRaw) < 0) throw new Error('Answer the student community representation question.');
+    var communityNote = clean_(payload.communityNote);
+
+    var specializedRaw = clean_(payload.specializedFocus);
+    if (['Yes', 'No'].indexOf(specializedRaw) < 0) throw new Error('Answer the specialized focus / support programs question.');
 
     if (!payload.declaration) throw new Error('Please confirm the declaration before submitting.');
 
@@ -230,7 +248,8 @@ function submitReservation(payload) {
       id, now, schoolName, clean_(payload.schoolSource) === 'NEW' ? 'NEW' : 'LISTED',
       clean_(payload.udise), institutionType, district, subDistrict, clean_(payload.address),
       totalStudents, classes.join(', '), contactName, contactPhone, coordName, coordPhone, email,
-      reservations.join(', '), bool_(payload.accessibility) ? 'Yes' : 'No', bool_(payload.parentConsent) ? 'Yes' : 'No',
+      setting, demographics, communityRaw, communityNote, specializedRaw,
+      bool_(payload.accessibility) ? 'Yes' : 'No', bool_(payload.parentConsent) ? 'Yes' : 'No',
       bool_(payload.photoConsent) ? 'Yes' : 'No', clean_(payload.medicalInfo), true, STATUS.ACTIVE, now, ''
     ]);
     audit_([{ action: 'SUBMIT', id: id, next: schoolName + ' (' + district + ' / ' + subDistrict + ') submitted' }], 'Form');
@@ -284,7 +303,11 @@ function updateSubmission(pin, id, changes, official) {
       'Teacher Coordinator Name': changes.coordinatorName != null ? clean_(changes.coordinatorName) : s.coordinatorName,
       'Teacher Coordinator Mobile': changes.coordinatorPhone != null ? clean_(changes.coordinatorPhone) : s.coordinatorPhone,
       'Email': changes.email != null ? clean_(changes.email) : s.email,
-      'Reservations': changes.reservations != null ? [].concat(changes.reservations).map(clean_).filter(Boolean).join(', ') : s.reservations.join(', '),
+      'Geographic Setting': changes.setting != null ? clean_(changes.setting) : s.setting,
+      'Student Demographics': changes.demographics != null ? clean_(changes.demographics) : s.demographics,
+      'SC/ST Community Representation': changes.communityRepresentation != null ? (bool_(changes.communityRepresentation) ? 'Yes' : 'No') : (s.communityRepresentation ? 'Yes' : 'No'),
+      'Community Representation Note': changes.communityNote != null ? clean_(changes.communityNote) : s.communityNote,
+      'Fishing/Coastal Community Focus': changes.specializedFocus != null ? (bool_(changes.specializedFocus) ? 'Yes' : 'No') : (s.specializedFocus ? 'Yes' : 'No'),
       'Accessibility Support': changes.accessibility != null ? (bool_(changes.accessibility) ? 'Yes' : 'No') : (s.accessibility ? 'Yes' : 'No'),
       'Parent Consent': changes.parentConsent != null ? (bool_(changes.parentConsent) ? 'Yes' : 'No') : (s.parentConsent ? 'Yes' : 'No'),
       'Photo Video Consent': changes.photoConsent != null ? (bool_(changes.photoConsent) ? 'Yes' : 'No') : (s.photoConsent ? 'Yes' : 'No'),
@@ -293,6 +316,8 @@ function updateSubmission(pin, id, changes, official) {
     if (!next['School Name']) throw new Error('School name is required.');
     if (!CONFIG.DISTRICTS.hasOwnProperty(next['Educational District'])) throw new Error('Invalid educational district.');
     if (CONFIG.DISTRICTS[next['Educational District']].indexOf(next['Sub-District']) < 0) throw new Error('Invalid sub-district.');
+    if (next['Geographic Setting'] && CONFIG.SETTINGS.indexOf(next['Geographic Setting']) < 0) throw new Error('Invalid geographical setting.');
+    if (next['Student Demographics'] && CONFIG.DEMOGRAPHICS.indexOf(next['Student Demographics']) < 0) throw new Error('Invalid student demographics classification.');
 
     var user = actor_(official);
     var now = new Date();
@@ -418,9 +443,7 @@ function adminSnapshot_() {
   var byClassMap = {};
   active.forEach(function (s) { s.classes.forEach(function (c) { byClassMap[c] = (byClassMap[c] || 0) + 1; }); });
 
-  var reservationCounts = {};
-  CONFIG.RESERVATIONS.concat([CONFIG.NO_RESERVATION]).forEach(function (r) { reservationCounts[r] = 0; });
-  active.forEach(function (s) { s.reservations.forEach(function (r) { reservationCounts[r] = (reservationCounts[r] || 0) + 1; }); });
+  var considerations = CONSIDERATIONS.map(function (c) { return { name: c.label, count: active.filter(c.test).length }; });
 
   return {
     meta: { title: CONFIG.TITLE, subtitle: CONFIG.SUBTITLE, serverTime: Date.now() },
@@ -431,20 +454,20 @@ function adminSnapshot_() {
       accessibility: active.filter(function (s) { return s.accessibility; }).length,
       parentConsent: active.filter(function (s) { return s.parentConsent; }).length,
       photoConsent: active.filter(function (s) { return s.photoConsent; }).length,
-      needingReservation: active.filter(function (s) { return s.reservations.indexOf(CONFIG.NO_RESERVATION) < 0; }).length
+      needingConsideration: active.filter(function (s) { return CONSIDERATIONS.some(function (c) { return c.test(s); }); }).length
     },
     byInstitution: toList_(byInstitution),
     byDistrict: toList_(byDistrict),
     bySubDistrict: toList_(bySubDistrict),
     byClass: CONFIG.CLASSES.map(function (c) { return { name: 'Class ' + c, count: byClassMap[c] || 0 }; }),
-    reservations: CONFIG.RESERVATIONS.concat([CONFIG.NO_RESERVATION]).map(function (r) { return { name: r, count: reservationCounts[r] || 0 }; }),
+    considerations: considerations,
     submissions: subs.map(publicSubmission_).sort(function (a, b) { return b.ts - a.ts; }),
     schoolsExtra: readObjects_(sheet_(CONFIG.SHEETS.SCHOOLS_EXTRA, HEADERS.SCHOOLS_EXTRA)).map(mapSchoolExtra_),
     districts: CONFIG.DISTRICTS,
     classes: CONFIG.CLASSES,
     institutionTypes: CONFIG.INSTITUTION_TYPES,
-    reservationOptions: CONFIG.RESERVATIONS,
-    noReservation: CONFIG.NO_RESERVATION
+    settings: CONFIG.SETTINGS,
+    demographics: CONFIG.DEMOGRAPHICS
   };
 }
 
@@ -598,7 +621,10 @@ function readSubmissions_() {
       classes: splitList_(r['Classes Participating']),
       contactName: clean_(r['Contact Person Name']), contactPhone: clean_(r['Contact Person Mobile']),
       coordinatorName: clean_(r['Teacher Coordinator Name']), coordinatorPhone: clean_(r['Teacher Coordinator Mobile']),
-      email: clean_(r['Email']), reservations: splitList_(r['Reservations']),
+      email: clean_(r['Email']),
+      setting: clean_(r['Geographic Setting']), demographics: clean_(r['Student Demographics']),
+      communityRepresentation: yes_(r['SC/ST Community Representation']), communityNote: clean_(r['Community Representation Note']),
+      specializedFocus: yes_(r['Fishing/Coastal Community Focus']),
       accessibility: yes_(r['Accessibility Support']), parentConsent: yes_(r['Parent Consent']),
       photoConsent: yes_(r['Photo Video Consent']), medicalInfo: clean_(r['Medical Info']),
       status: key_(r['Status']) || STATUS.ACTIVE, updatedAt: toMs_(r['Updated At']), updatedBy: clean_(r['Updated By']),
@@ -613,7 +639,9 @@ function publicSubmission_(s) {
     institutionType: s.institutionType, district: s.district, subDistrict: s.subDistrict, address: s.address,
     totalStudents: s.totalStudents, classes: s.classes, contactName: s.contactName, contactPhone: s.contactPhone,
     coordinatorName: s.coordinatorName, coordinatorPhone: s.coordinatorPhone, email: s.email,
-    reservations: s.reservations, accessibility: s.accessibility, parentConsent: s.parentConsent,
+    setting: s.setting, demographics: s.demographics, communityRepresentation: s.communityRepresentation,
+    communityNote: s.communityNote, specializedFocus: s.specializedFocus,
+    accessibility: s.accessibility, parentConsent: s.parentConsent,
     photoConsent: s.photoConsent, medicalInfo: s.medicalInfo, status: s.status, updatedAt: s.updatedAt, updatedBy: s.updatedBy
   };
 }

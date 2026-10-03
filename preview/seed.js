@@ -21,9 +21,8 @@
     ['Al Ameen HSS Kozhikode City', '17040300505', 'Nazeer Ahmed', '9447156789', 'Mavoor Road, Kozhikode City']
   ];
 
-  var DISTRICTS = { 'Kozhikode City': 'Kozhikode', 'Kozhikode Rural': 'Kozhikode', 'Chevayur': 'Kozhikode', 'Feroke': 'Kozhikode' };
   var SCHOOL_LOC = [
-    'Kozhikode', 'Kozhikode', 'Kozhikode', 'Kozhikode', 'Kozhikode',
+    'Thamarassery', 'Thamarassery', 'Thamarassery', 'Thamarassery', 'Thamarassery',
     'Vatakara', 'Vatakara', 'Vatakara', 'Vatakara', 'Vatakara',
     'Kozhikode', 'Kozhikode', 'Kozhikode', 'Kozhikode', 'Kozhikode'
   ];
@@ -33,8 +32,8 @@
     'Kozhikode City', 'Chevayur', 'Feroke', 'Kozhikode Rural', 'Kozhikode City'
   ];
   var ITYPE = ['Aided', 'Unaided', 'Private'];
-  var RES = ['Fisheries', 'Girls Only', 'SC / ST', 'Rural Area', 'PWD'];
-  var NO_RES = 'No Reservations';
+  var SETTINGS = ['Rural Area', 'Semi-Urban / Urban Area'];
+  var DEMOGRAPHICS = ['Girls-Only Institution', 'Co-educational Institution'];
 
   var seed = 7;
   function rnd() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
@@ -45,13 +44,17 @@
     var idx = i % SCHOOLS.length;
     var sc = SCHOOLS[idx];
     var classes = shuffle(['5', '6', '7', '8', '9', '10']).slice(0, 2 + Math.floor(rnd() * 3)).sort();
-    var reservations = rnd() < 0.45 ? [NO_RES] : shuffle(RES).slice(0, 1 + Math.floor(rnd() * 2));
+    var setting = SUB_LOC[idx] && rnd() < 0.4 ? SETTINGS[0] : SETTINGS[1];
+    var demographics = rnd() < 0.2 ? DEMOGRAPHICS[0] : DEMOGRAPHICS[1];
+    var community = rnd() < 0.3 ? 'Yes' : 'No';
+    var communityNote = community === 'Yes' && rnd() < 0.5 ? 'approx. ' + (10 + Math.floor(rnd() * 40)) + '%' : '';
+    var specialized = rnd() < 0.15 ? 'Yes' : 'No';
     var now = new Date(Date.now() - Math.floor(rnd() * 8) * 86400000);
     return [
       'SUB-' + ('000' + (i + 1)).slice(-4), now, sc[0], 'LISTED', sc[1], pick(ITYPE),
       SCHOOL_LOC[idx], SUB_LOC[idx], sc[4], 80 + Math.floor(rnd() * 800), classes.join(', '),
       sc[2], sc[3], pick(['Divya Menon', 'Jaison Mathew', 'Reshma K', 'Anoop Varma']), '94470' + (10000 + Math.floor(rnd() * 89999)),
-      'contact' + (i + 1) + '@school.edu.in', reservations.join(', '),
+      'contact' + (i + 1) + '@school.edu.in', setting, demographics, community, communityNote, specialized,
       rnd() < 0.15 ? 'Yes' : 'No', rnd() < 0.9 ? 'Yes' : 'No', rnd() < 0.85 ? 'Yes' : 'No',
       rnd() < 0.1 ? 'One student with a peanut allergy.' : '', true, 'ACTIVE', now, ''
     ];
@@ -77,7 +80,9 @@
       return ['Submission ID', 'Timestamp', 'School Name', 'School Source', 'UDISE Code', 'Institution Type',
         'Educational District', 'Sub-District', 'Address', 'Total Students', 'Classes Participating',
         'Contact Person Name', 'Contact Person Mobile', 'Teacher Coordinator Name', 'Teacher Coordinator Mobile',
-        'Email', 'Reservations', 'Accessibility Support', 'Parent Consent', 'Photo Video Consent',
+        'Email', 'Geographic Setting', 'Student Demographics', 'SC/ST Community Representation',
+        'Community Representation Note', 'Fishing/Coastal Community Focus',
+        'Accessibility Support', 'Parent Consent', 'Photo Video Consent',
         'Medical Info', 'Declaration', 'Status', 'Updated At', 'Updated By'];
     }
 

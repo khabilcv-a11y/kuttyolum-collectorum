@@ -62,13 +62,17 @@ preview/              local test harness only
 
 **Schools:** search their school by name (autocomplete from the master list) or use **"Can't find your
 school? Add it manually"** to type one in. Selecting a listed school prefills the contact person, mobile
-number and address from the sheet — fields stay editable so staff can correct outdated details. Reservation
-categories (Fisheries, Girls Only, SC / ST, Rural Area, PWD) can be combined freely; picking **No
-Reservations** clears the others.
+number and address from the sheet — fields stay editable so staff can correct outdated details.
+
+Instead of a blunt reservation-category checklist, the form asks four milder profile questions: the
+institution's geographical setting (Rural / Semi-Urban-Urban), its student-enrollment classification
+(Girls-Only / Co-educational), whether it serves a significant SC/ST demographic (Yes/No, with an optional
+note), and whether it's specifically structured for a specialized group such as coastal/fishing community
+welfare schools (Yes/No). The dashboard still surfaces these as filterable "special considerations" tags.
 
 The form intentionally does **not** collect classes, teacher coordinator, email, accessibility/consent or
 medical info — that's already gathered by the separate registration/session-confirmation form that shares
-this same spreadsheet. This form is only for institution type, total students and reservation preference.
+this same spreadsheet.
 
 **District Administration (dashboard):**
 - **Overview** — schools confirmed, total students, districts covered, and breakdowns by institution type,
@@ -77,10 +81,13 @@ this same spreadsheet. This form is only for institution type, total students an
   region computed from its real-world position, shaded by its educational district (darker/lighter within
   a district just tells the sub-districts apart). A badge shows how many schools registered there; click a
   region to see them. Positions are approximate reference points, not surveyed boundaries.
-- **Special Considerations** — a button per reservation category with its count; click one to see the
-  sorted list of schools that need it.
+- **Special Considerations** — a button per tag (Rural Area, Girls-Only Institution, SC/ST Community
+  Representation, Fishing/Coastal Community Focus) derived from the four profile questions, with its
+  count; click one to see the sorted list of schools.
 - **Submissions** — search/filter all confirmations, edit any field, soft-delete/restore, and for schools
   submitted as "not listed", one click adds them to the managed school list.
+- **Reports** — filter by special consideration, educational district, sub-district, institution type and
+  status, sort by any column, and download the result as a CSV.
 - **School Management** — add, edit or remove schools from the dashboard-managed list (`Schools_Extra`).
   This never touches the original master sheet; it only extends what the form can match against.
 
