@@ -125,7 +125,23 @@
   };
   global.LockService = { getScriptLock: function () { return { waitLock: function () {}, tryLock: function () { return true; }, releaseLock: function () {} }; } };
   global.Session = { getActiveUser: function () { return { getEmail: function () { return ''; } }; } };
-  global.ScriptApp = { getService: function () { return { getUrl: function () { return new URL('dashboard.html', location.href).href; } }; } };
+  global.ScriptApp = {
+    getService: function () { return { getUrl: function () { return new URL('dashboard.html', location.href).href; } }; },
+    getProjectTriggers: function () { return store.triggers || (store.triggers = []); },
+    deleteTrigger: function (t) { store.triggers = (store.triggers || []).filter(function (x) { return x !== t; }); },
+    newTrigger: function (fn) {
+      var builder = {
+        timeBased: function () { return builder; },
+        everyHours: function () { return builder; },
+        create: function () {
+          var t = { getHandlerFunction: function () { return fn; } };
+          (store.triggers = store.triggers || []).push(t);
+          return t;
+        }
+      };
+      return builder;
+    }
+  };
   global.ContentService = {
     MimeType: { JSON: 'application/json', TEXT: 'text/plain' },
     createTextOutput: function (s) {
@@ -187,7 +203,7 @@
       return fetch('../web/' + page + '.html', { cache: 'no-store' });
     }).then(function (r) { return r.text(); }).then(function (html) {
       var inject = '<script>window.google = parent.google;<\/script>';
-      html = html.replace(/<head>/i, '<head>' + inject).replace(/"logo\.png"/g, '"../web/logo.png"');
+      html = html.replace(/<head>/i, '<head>' + inject).replace(/"(logo-[\w.-]+\.(?:png|jpg|jpeg))"/g, '"../web/$1"');
       document.getElementById(frameId || 'frame').srcdoc = html;
     });
   };

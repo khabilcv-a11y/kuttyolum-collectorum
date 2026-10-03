@@ -74,22 +74,38 @@ The form intentionally does **not** collect classes, teacher coordinator, email,
 medical info — that's already gathered by the separate registration/session-confirmation form that shares
 this same spreadsheet.
 
+Both the form and the dashboard carry a branded header: the Kuttyolum Collectorum programme logo, and the
+three initiative partner logos (District Administration Kozhikode, Kozhikode City of Literature, DCIP)
+under "An initiative of".
+
 **District Administration (dashboard):**
-- **Overview** — schools confirmed, total students, districts covered, and breakdowns by institution type,
-  district and sub-district.
-- **Map** — a schematic block map (no external map library, no satellite imagery): each sub-district is a
-  region computed from its real-world position, shaded by its educational district (darker/lighter within
-  a district just tells the sub-districts apart). A badge shows how many schools registered there; click a
-  region to see them. Positions are approximate reference points, not surveyed boundaries.
+- **Overview** — KPIs (schools confirmed, total students, districts covered, schools with a special
+  consideration), breakdowns by institution type and district, and a **Consolidated Summary by
+  Sub-District** table — every sub-district (including ones with zero submissions yet, so coverage gaps
+  are visible), with schools, students, institution-type split and all four special-consideration counts
+  in one place.
 - **Special Considerations** — a button per tag (Rural Area, Girls-Only Institution, SC/ST Community
   Representation, Fishing/Coastal Community Focus) derived from the four profile questions, with its
   count; click one to see the sorted list of schools.
 - **Submissions** — search/filter all confirmations, edit any field, soft-delete/restore, and for schools
   submitted as "not listed", one click adds them to the managed school list.
 - **Reports** — filter by special consideration, educational district, sub-district, institution type and
-  status, sort by any column, and download the result as a CSV.
+  status, sort by any column, and download the result as a **CSV** or a branded, print-ready **PDF**
+  (via the browser's print dialog — a header with the logo/title/generated time/filters repeats on every
+  page, with a footer; enable "Headers and footers" in the print dialog for page numbers).
 - **School Management** — add, edit or remove schools from the dashboard-managed list (`Schools_Extra`).
   This never touches the original master sheet; it only extends what the form can match against.
+
+## Performance
+
+- The form's bootstrap (school list, districts, question options) is cached server-side for 6 hours and
+  only invalidated by writes that actually change it (`addSchool`/`updateSchool`/`setSchoolStatus`) —
+  submitting or editing a reservation no longer busts the cache for the next visitor.
+- `setup()` installs a time-based trigger (`warmFormCache`, every 4 hours) that proactively re-populates
+  the cache before it would expire, so in practice almost nobody hits a cold read — only whoever first
+  runs `setup()`. Re-run `installFormCacheWarmer_()` manually if you ever need to reinstall it.
+- The form also keeps a 2-hour client-side copy in `localStorage`: a repeat visit on the same device
+  renders instantly from that cache while a fresh copy loads silently in the background.
 
 ## Test locally without Google
 

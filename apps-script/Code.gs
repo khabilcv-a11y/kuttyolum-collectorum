@@ -147,6 +147,8 @@ function setup() {
   } else {
     Logger.log('Admin PIN already set (Project Settings → Script Properties → ADMIN_PIN).');
   }
+  installFormCacheWarmer_();
+  getFormBootstrap(); // warm the cache immediately so the very first visitor isn't the one paying for it
   Logger.log('Setup complete. School master list detected: ' + readExternalSchools_().length + ' school(s).');
 }
 
@@ -155,6 +157,29 @@ function resetAdminPin() {
   var pin = String(Math.floor(100000 + Math.random() * 900000));
   PropertiesService.getScriptProperties().setProperty('ADMIN_PIN', pin);
   Logger.log('New admin PIN: ' + pin);
+}
+
+/**
+ * Re-populates the form bootstrap cache before it would naturally expire, so
+ * visitors essentially never hit the slow cold read — only whoever runs
+ * setup() the first time, and this trigger from then on. Safe to call
+ * manually too (e.g. after editing the school master sheet by hand, which
+ * doesn't go through addSchool/updateSchool and so doesn't auto-invalidate).
+ */
+function warmFormCache() {
+  CacheService.getScriptCache().remove(FORM_CACHE_KEY);
+  getFormBootstrap();
+}
+
+function installFormCacheWarmer_() {
+  try {
+    ScriptApp.getProjectTriggers().forEach(function (t) {
+      if (t.getHandlerFunction() === 'warmFormCache') ScriptApp.deleteTrigger(t);
+    });
+    ScriptApp.newTrigger('warmFormCache').timeBased().everyHours(4).create();
+  } catch (e) {
+    Logger.log('Could not install the cache-warming trigger automatically: ' + e + '. Run installFormCacheWarmer_ manually from the editor, or just rely on the 6h cache.');
+  }
 }
 
 

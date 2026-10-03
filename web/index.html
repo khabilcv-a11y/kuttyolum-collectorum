@@ -167,9 +167,9 @@
 
       <div class="q" id="q-district">
         <div class="num">03</div>
-        <label class="lbl" for="district">Educational District <span class="req">*</span></label>
+        <label class="lbl">Educational District <span class="req">*</span></label>
         <div class="hint">Select the educational district the school belongs to.</div>
-        <select id="district"><option value="">Select educational district</option></select>
+        <div class="chips wide" id="districtChips"></div>
         <div class="err-field">Select an educational district.</div>
       </div>
 
@@ -292,7 +292,7 @@
 
   // ------------------------------------------------------------------ state
   var BOOT = null;
-  var SEL = { school: null, matched: false, itype: '', setting: '', demographics: '', community: '', specialized: '' };
+  var SEL = { school: null, matched: false, itype: '', district: '', setting: '', demographics: '', community: '', specialized: '' };
 
   function chip(container, text, on, onClick, disabled) {
     var b = document.createElement('button');
@@ -331,10 +331,13 @@
   }
 
   function renderDistricts() {
-    var sel = $('district');
-    sel.innerHTML = '<option value="">Select educational district</option>';
+    var c = $('districtChips'); c.innerHTML = '';
     Object.keys(BOOT.districts).forEach(function (d) {
-      var o = document.createElement('option'); o.value = d; o.textContent = d; sel.appendChild(o);
+      chip(c, d, SEL.district === d, function () {
+        SEL.district = d;
+        renderDistricts();
+        renderSubDistricts(d);
+      });
     });
   }
 
@@ -410,8 +413,6 @@
   });
   $('schoolName').addEventListener('blur', function () { setTimeout(function () { $('suggest').classList.add('hidden'); }, 150); });
 
-  $('district').addEventListener('change', function () { renderSubDistricts(this.value); });
-
   // ------------------------------------------------------------------ validation & submit
   function setInvalid(qid, on) { $(qid).classList.toggle('invalid', on); }
 
@@ -420,7 +421,7 @@
     function need(qid, cond) { var bad = !cond; setInvalid(qid, bad); if (bad) ok = false; }
     need('q-school', $('schoolName').value.trim().length > 0);
     need('q-itype', !!SEL.itype);
-    need('q-district', !!$('district').value);
+    need('q-district', !!SEL.district);
     need('q-subdistrict', !!$('subDistrict').value);
     need('q-students', $('totalStudents').value !== '' && Number($('totalStudents').value) >= 0);
     need('q-contactName', $('contactName').value.trim().length > 0);
@@ -445,7 +446,7 @@
       schoolName: $('schoolName').value.trim(),
       schoolSource: SEL.matched ? 'LISTED' : 'NEW',
       institutionType: SEL.itype,
-      district: $('district').value,
+      district: SEL.district,
       subDistrict: $('subDistrict').value,
       address: $('address').value.trim(),
       totalStudents: Number($('totalStudents').value),
@@ -472,18 +473,52 @@
   });
 
   // ------------------------------------------------------------------ boot
-  var slowTimer = setTimeout(function () { $('loadNoteSlow').classList.remove('hidden'); }, 3000);
-  api('getFormBootstrap').then(function (boot) {
-    clearTimeout(slowTimer);
+  // Instant repeat loads: show a recently-cached bootstrap immediately (no
+  // network wait), then silently refresh the school index in the background.
+  // First-ever visit on a device still waits for the real network response.
+  var LS_BOOT_KEY = 'kc_form_boot_v1';
+  var LS_BOOT_MAX_AGE = 2 * 60 * 60 * 1000; // 2h
+  function loadCachedBoot() {
+    try {
+      var obj = JSON.parse(localStorage.getItem(LS_BOOT_KEY) || 'null');
+      if (!obj || !obj.t || !obj.boot || (Date.now() - obj.t) > LS_BOOT_MAX_AGE) return null;
+      return obj.boot;
+    } catch (e) { return null; }
+  }
+  function saveCachedBoot(boot) {
+    try { localStorage.setItem(LS_BOOT_KEY, JSON.stringify({ t: Date.now(), boot: boot })); } catch (e) {}
+  }
+  function applyBoot(boot) {
     BOOT = boot;
     schoolIdx = boot.schools || [];
     $('titleEn').textContent = boot.meta.title;
     document.title = boot.meta.title + ' · Reservation Preference Form';
     renderInstitutionType(); renderSetting(); renderDemographics(); renderCommunity(); renderSpecialized(); renderDistricts();
+  }
+
+  var cachedBoot = loadCachedBoot();
+  if (cachedBoot) {
+    applyBoot(cachedBoot);
     $('loadNote').classList.add('hidden');
     $('form').classList.remove('hidden');
+  }
+  var slowTimer = cachedBoot ? null : setTimeout(function () { $('loadNoteSlow').classList.remove('hidden'); }, 3000);
+  api('getFormBootstrap').then(function (boot) {
+    if (slowTimer) clearTimeout(slowTimer);
+    saveCachedBoot(boot);
+    if (!cachedBoot) {
+      applyBoot(boot);
+      $('loadNote').classList.add('hidden');
+      $('form').classList.remove('hidden');
+    } else {
+      // Already on screen from cache — just keep the school index current
+      // for the autocomplete without disturbing anything the user has typed.
+      BOOT = boot;
+      schoolIdx = boot.schools || [];
+    }
   }, function (err) {
-    clearTimeout(slowTimer);
+    if (cachedBoot) return; // already usable from cache; ignore the background refresh failure
+    if (slowTimer) clearTimeout(slowTimer);
     $('loadNote').innerHTML = 'Could not load the form: ' + (err.message || err) + '<br><button type="button" class="link-btn" onclick="location.reload()">Try again</button>';
   });
 })();

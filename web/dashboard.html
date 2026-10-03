@@ -109,19 +109,38 @@
   .chkrow label { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; font-size: 12.5px; background: var(--soft); }
   .modal-err { color: var(--bad); font-size: 12.5px; margin-bottom: 8px; min-height: 16px; }
 
-  /* ---------- map ---------- */
-  .map-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 12px; font-size: 12.5px; }
-  .map-legend .grp { display: flex; align-items: center; gap: 8px; }
-  .map-legend .sw { width: 14px; height: 14px; border-radius: 4px; flex: none; }
-  #kcMapWrap { background: #eaf1f2; border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
-  #kcMapSvg { width: 100%; height: auto; display: block; }
-  .map-region { stroke: #fffdf8; stroke-width: 1.5; cursor: pointer; transition: opacity .12s, stroke-width .12s; }
-  .map-region:hover { opacity: .82; }
-  .map-region.sel { stroke: var(--ink); stroke-width: 3; }
-  .map-label { font-size: 10.5px; font-weight: 700; fill: #fff; text-anchor: middle; pointer-events: none; text-shadow: 0 1px 2px rgba(0,0,0,.35); }
-  .map-count { fill: var(--ink); stroke: #fffdf8; stroke-width: 1.5; cursor: pointer; }
-  .map-count-n { font-size: 11px; font-weight: 800; fill: #fff; text-anchor: middle; pointer-events: none; }
-  .map-note { color: var(--muted); font-size: 12px; margin-top: 10px; }
+  /* ---------- branding ---------- */
+  .logo-strip { background: #ffffff; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+  .logo-strip-inner { max-width: 1180px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .logo-strip .logo-main img { height: 42px; width: auto; display: block; }
+  .logo-strip .logo-partners { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .logo-strip .logo-partners-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; font-weight: 700; }
+  .logo-strip .logo-partners-row { display: flex; align-items: center; gap: 12px; }
+  .logo-strip .logo-partners-row img { height: 26px; width: auto; display: block; }
+  @media (max-width: 560px) {
+    .logo-strip-inner { justify-content: center; text-align: center; }
+    .logo-strip .logo-main, .logo-strip .logo-partners { width: 100%; justify-content: center; align-items: center; }
+    .logo-strip .logo-partners-row { justify-content: center; flex-wrap: wrap; }
+  }
+
+  /* ---------- printable report ---------- */
+  #printArea { display: none; }
+  .print-logo { height: 50px; width: auto; }
+  .print-brand { display: flex; align-items: center; gap: 14px; padding-bottom: 8px; border-bottom: 2px solid #2f6b5e; margin-bottom: 6px; }
+  .print-brand h1 { font-size: 17px; margin: 0; color: #2f6b5e; }
+  .print-brand p { font-size: 10.5px; margin: 2px 0 0; color: #555; }
+  .print-meta { margin-left: auto; text-align: right; font-size: 9px; color: #666; line-height: 1.5; }
+  .print-filters { font-size: 10px; color: #333; padding: 4px 0 8px; }
+  .print-table { width: 100%; border-collapse: collapse; font-family: Inter, system-ui, sans-serif; font-size: 10px; color: #111; }
+  .print-table th, .print-table td { border: 1px solid #bbb; padding: 4px 6px; text-align: left; vertical-align: top; }
+  .print-table thead tr.print-col-head th { background: #eef2ee; font-size: 9px; text-transform: uppercase; letter-spacing: .03em; }
+  .print-table tfoot td { border: 0; padding-top: 8px; font-size: 9px; color: #666; text-align: center; }
+  @media print {
+    body * { visibility: hidden; }
+    #printArea, #printArea * { visibility: visible; }
+    #printArea { display: block; position: absolute; left: 0; top: 0; width: 100%; }
+    @page { size: A4 landscape; margin: 14mm 10mm 16mm; }
+  }
 
   #toastWrap { position: fixed; right: 14px; bottom: 14px; z-index: 100; display: flex; flex-direction: column; gap: 8px; }
   .toast { background: #1f2937; color: #fff; padding: 10px 14px; border-radius: 10px; font-size: 13px; box-shadow: 0 8px 24px rgba(0,0,0,.3); }
@@ -130,6 +149,22 @@
 </style>
 </head>
 <body>
+
+<div class="logo-strip">
+  <div class="logo-strip-inner">
+    <div class="logo-main">
+      <img src="logo-kuttyolum.jpg" alt="Kuttyolum Collectorum">
+    </div>
+    <div class="logo-partners">
+      <span class="logo-partners-label">An initiative of</span>
+      <div class="logo-partners-row">
+        <img src="logo-kerala.png" alt="District Administration, Kozhikode">
+        <img src="logo-literature.png" alt="Kozhikode City of Literature">
+        <img src="logo-dcip.png" alt="District Collector's Internship Programme, Kozhikode">
+      </div>
+    </div>
+  </div>
+</div>
 
 <div id="login">
   <div class="card">
@@ -150,7 +185,6 @@
     </div>
     <div class="tabs" id="tabs">
       <button data-tab="overview">Overview</button>
-      <button data-tab="map">Map</button>
       <button data-tab="considerations">Special Considerations</button>
       <button data-tab="submissions">Submissions</button>
       <button data-tab="reports">Reports</button>
@@ -169,24 +203,6 @@
   var $ = function (id) { return document.getElementById(id); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
 
-  // ------------------------------------------------------------------ geography
-  // Relative positions only (from real town/panchayat locations) used to lay
-  // the sub-district regions out in roughly the right places — this draws a
-  // schematic block map, not a surveyed boundary map.
-  var DISTRICT_BASE_COLOR = { 'Kozhikode': '#2f6b5e', 'Vatakara': '#b3781c', 'Thamarassery': '#6a4c93' };
-  var SUBDISTRICT_GEO = {
-    'Kozhikode City': [11.2588, 75.7804], 'Kozhikode Rural': [11.2200, 75.8500],
-    'Chevayur': [11.2874, 75.8078], 'Feroke': [11.1591, 75.8199],
-    'Vatakara': [11.6089, 75.5928], 'Koyilandy': [11.4681, 75.6819],
-    'Nadapuram': [11.6167, 75.7028], 'Melady': [11.6300, 75.7200],
-    'Thodannur': [11.6000, 75.6100], 'Kunnummal': [11.5500, 75.6500],
-    'Chombala': [11.6603, 75.5735],
-    'Thamarassery': [11.4959, 75.9908], 'Koduvally': [11.4632, 75.9328],
-    'Mukkam': [11.3676, 75.9911], 'Balussery': [11.3978, 75.8256],
-    'Kunnamangalam': [11.3221, 75.8747], 'Perambra': [11.5044, 75.8214]
-  };
-  var S_MAP = { selected: null };
-
   // "Special considerations" derived client-side from the four milder
   // profile questions — mirrors CONSIDERATIONS in apps-script/Code.gs.
   var CONSIDERATIONS = [
@@ -197,45 +213,6 @@
   ];
   function considerationTags(s) {
     return CONSIDERATIONS.filter(function (c) { return c.test(s); }).map(function (c) { return c.label; });
-  }
-
-  // ---- tiny self-contained Voronoi (no map library needed): clip a big box
-  // per point against every other point's perpendicular bisector.
-  function clipHalf(poly, a, b, c) {
-    var out = [];
-    for (var i = 0; i < poly.length; i++) {
-      var cur = poly[i], prev = poly[(i - 1 + poly.length) % poly.length];
-      var curIn = (a * cur[0] + b * cur[1]) <= c, prevIn = (a * prev[0] + b * prev[1]) <= c;
-      if (curIn !== prevIn) {
-        var denom = a * (cur[0] - prev[0]) + b * (cur[1] - prev[1]);
-        var t = denom ? (c - (a * prev[0] + b * prev[1])) / denom : 0;
-        out.push([prev[0] + t * (cur[0] - prev[0]), prev[1] + t * (cur[1] - prev[1])]);
-      }
-      if (curIn) out.push(cur);
-    }
-    return out;
-  }
-  function voronoiCells(points, box) {
-    return points.map(function (p, i) {
-      var poly = [[box.x0, box.y0], [box.x1, box.y0], [box.x1, box.y1], [box.x0, box.y1]];
-      points.forEach(function (q, j) {
-        if (j === i) return;
-        var a = 2 * (q[0] - p[0]), b = 2 * (q[1] - p[1]);
-        var c = (q[0] * q[0] + q[1] * q[1]) - (p[0] * p[0] + p[1] * p[1]);
-        poly = clipHalf(poly, a, b, c);
-      });
-      return poly;
-    });
-  }
-  function centroid(poly) {
-    var x = 0, y = 0; poly.forEach(function (p) { x += p[0]; y += p[1]; });
-    return [x / poly.length, y / poly.length];
-  }
-  function shade(hex, amt) { // amt: -1..1, negative darkens, positive lightens
-    var n = parseInt(hex.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
-    var mix = function (c) { return Math.round(amt >= 0 ? c + (255 - c) * amt : c * (1 + amt)); };
-    var clamp = function (c) { return Math.max(0, Math.min(255, c)); };
-    return '#' + [mix(r), mix(g), mix(b)].map(function (c) { return clamp(c).toString(16).padStart(2, '0'); }).join('');
   }
 
   // ------------------------------------------------------------------ server
@@ -333,7 +310,6 @@
     });
     var main = $('main');
     if (S.tab === 'overview') main.innerHTML = renderOverview();
-    else if (S.tab === 'map') main.innerHTML = renderMapShell();
     else if (S.tab === 'considerations') main.innerHTML = renderConsiderations();
     else if (S.tab === 'submissions') main.innerHTML = renderSubmissions();
     else if (S.tab === 'reports') main.innerHTML = renderReports();
@@ -362,99 +338,50 @@
         '<div class="card"><h2 class="h">By Educational District</h2>' + (d.byDistrict.length ? bar(d.byDistrict) : emptyMsg()) + '</div>' +
         '<div class="card"><h2 class="h">By Institution Type</h2>' + (d.byInstitution.length ? bar(d.byInstitution) : emptyMsg()) + '</div>' +
       '</div>' +
-      '<div class="card"><h2 class="h">By Sub-District</h2>' + (d.bySubDistrict.length ? bar(d.bySubDistrict) : emptyMsg()) + '</div>';
+      '<div class="card"><h2 class="h">Consolidated Summary by Sub-District</h2>' + renderConsolidationTable() + '</div>';
   }
   function kpi(v, l) { return '<div class="kpi"><b>' + esc(v) + '</b><span>' + esc(l) + '</span></div>'; }
   function emptyMsg() { return '<div class="empty">No submissions yet.</div>'; }
 
-  function renderMapShell() {
-    var legend = Object.keys(DISTRICT_BASE_COLOR).map(function (d) {
-      return '<span class="grp"><span class="sw" style="background:' + DISTRICT_BASE_COLOR[d] + '"></span>' + esc(d) + '</span>';
-    }).join('');
-    return '<div class="card">' +
-      '<h2 class="h">School Registrations by Educational District</h2>' +
-      '<div class="map-legend">' + legend + '</div>' +
-      '<div id="kcMapWrap"><svg id="kcMapSvg" viewBox="0 0 640 720"></svg></div>' +
-      '<div class="map-note">A schematic block map — each region is one sub-district, shaded by its educational district (darker/lighter within a district just tells the sub-districts apart). Positions are approximate, not surveyed boundaries. The number badge is how many schools have registered there; click a region to see them.</div>' +
-      '</div>' +
-      '<div class="card" id="kcMapListCard"></div>';
-  }
-
-  function buildMap() {
-    var svg = $('kcMapSvg');
-    if (!svg) return;
-    var names = Object.keys(SUBDISTRICT_GEO);
-    var lats = names.map(function (n) { return SUBDISTRICT_GEO[n][0]; });
-    var lngs = names.map(function (n) { return SUBDISTRICT_GEO[n][1]; });
-    var latMin = Math.min.apply(null, lats), latMax = Math.max.apply(null, lats);
-    var lngMin = Math.min.apply(null, lngs), lngMax = Math.max.apply(null, lngs);
-    var W = 640, H = 720, pad = 90;
-    var sx = (W - pad * 2) / (lngMax - lngMin || 1), sy = (H - pad * 2) / (latMax - latMin || 1);
-    var proj = function (lat, lng) { return [pad + (lng - lngMin) * sx, pad + (latMax - lat) * sy]; };
-    var points = names.map(function (n) { return proj(SUBDISTRICT_GEO[n][0], SUBDISTRICT_GEO[n][1]); });
-    var box = { x0: -60, y0: -60, x1: W + 60, y1: H + 60 };
-    var cells = voronoiCells(points, box);
-
-    var counts = {}, byDistrictAndSub = {};
-    (S.data.submissions || []).filter(function (s) { return s.status === 'ACTIVE'; }).forEach(function (s) {
-      counts[s.subDistrict] = (counts[s.subDistrict] || 0) + 1;
-      (byDistrictAndSub[s.subDistrict] = byDistrictAndSub[s.subDistrict] || []).push(s);
-    });
-
-    var byDistrict = {};
-    names.forEach(function (n) {
-      var d = findDistrictFor(n);
-      (byDistrict[d] = byDistrict[d] || []).push(n);
-    });
-
-    var svgParts = [];
-    names.forEach(function (n, i) {
-      var d = findDistrictFor(n);
-      var base = DISTRICT_BASE_COLOR[d] || '#666';
-      var siblings = byDistrict[d] || [n];
-      var idx = siblings.indexOf(n);
-      var amt = siblings.length > 1 ? (-0.28 + (0.5 * idx) / (siblings.length - 1)) : 0;
-      var fill = shade(base, amt);
-      var pts = cells[i].map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ');
-      var c = centroid(cells[i]);
-      svgParts.push('<polygon class="map-region" data-sub="' + esc(n) + '" points="' + pts + '" fill="' + fill + '"></polygon>');
-      svgParts.push('<text class="map-label" x="' + c[0].toFixed(1) + '" y="' + (c[1] - (counts[n] ? 9 : -3)).toFixed(1) + '">' + esc(n) + '</text>');
-      if (counts[n]) {
-        svgParts.push('<circle class="map-count" cx="' + c[0].toFixed(1) + '" cy="' + (c[1] + 12).toFixed(1) + '" r="11" data-sub="' + esc(n) + '"></circle>');
-        svgParts.push('<text class="map-count-n" x="' + c[0].toFixed(1) + '" y="' + (c[1] + 16).toFixed(1) + '" data-sub="' + esc(n) + '">' + counts[n] + '</text>');
-      }
-    });
-    svg.innerHTML = svgParts.join('');
-
-    svg.querySelectorAll('[data-sub]').forEach(function (el) {
-      el.addEventListener('click', function () {
-        var sub = el.getAttribute('data-sub');
-        S_MAP.selected = S_MAP.selected === sub ? null : sub;
-        applyMapSelection(byDistrictAndSub);
+  // One row per sub-district (even ones with zero submissions, so gaps in
+  // coverage are visible too), with every count that matters in one place.
+  function consolidationRows() {
+    var d = S.data;
+    var map = {};
+    Object.keys(d.districts).forEach(function (district) {
+      d.districts[district].forEach(function (sub) {
+        map[district + '||' + sub] = { district: district, subDistrict: sub, schools: 0, students: 0, aided: 0, unaided: 0, private: 0, rural: 0, girlsOnly: 0, community: 0, specialized: 0 };
       });
     });
-    applyMapSelection(byDistrictAndSub);
-  }
-
-  function findDistrictFor(subDistrict) {
-    var d = S.data.districts;
-    var found = Object.keys(d).filter(function (k) { return d[k].indexOf(subDistrict) >= 0; })[0];
-    return found || Object.keys(DISTRICT_BASE_COLOR)[0];
-  }
-
-  function applyMapSelection(byDistrictAndSub) {
-    var svg = $('kcMapSvg');
-    svg.querySelectorAll('.map-region').forEach(function (el) {
-      el.classList.toggle('sel', el.getAttribute('data-sub') === S_MAP.selected);
+    (d.submissions || []).filter(function (s) { return s.status === 'ACTIVE'; }).forEach(function (s) {
+      var key = s.district + '||' + s.subDistrict;
+      var row = map[key] || (map[key] = { district: s.district, subDistrict: s.subDistrict, schools: 0, students: 0, aided: 0, unaided: 0, private: 0, rural: 0, girlsOnly: 0, community: 0, specialized: 0 });
+      row.schools++; row.students += s.totalStudents || 0;
+      if (s.institutionType === 'Aided') row.aided++;
+      else if (s.institutionType === 'Unaided') row.unaided++;
+      else if (s.institutionType === 'Private') row.private++;
+      if (s.setting === 'Rural Area') row.rural++;
+      if (s.demographics === 'Girls-Only Institution') row.girlsOnly++;
+      if (s.communityRepresentation) row.community++;
+      if (s.specializedFocus) row.specialized++;
     });
-    var card = $('kcMapListCard');
-    if (!S_MAP.selected) {
-      card.innerHTML = '<div class="empty">Click a region above to see the schools registered there.</div>';
-      return;
-    }
-    var list = (byDistrictAndSub[S_MAP.selected] || []).sort(function (a, b) { return a.schoolName.localeCompare(b.schoolName); });
-    card.innerHTML = '<h2 class="h">' + esc(S_MAP.selected) + '<span class="cnt">' + list.length + ' school(s)</span></h2>' +
-      (list.length ? renderSchoolListTable(list) : '<div class="empty">No schools registered here yet.</div>');
+    return Object.keys(map).map(function (k) { return map[k]; })
+      .sort(function (a, b) { return a.district.localeCompare(b.district) || a.subDistrict.localeCompare(b.subDistrict); });
+  }
+
+  function renderConsolidationTable() {
+    var rows = consolidationRows();
+    if (!rows.length) return emptyMsg();
+    return '<div style="overflow-x:auto"><table class="dt"><thead><tr>' +
+      '<th>Educational District</th><th>Sub-District</th><th>Schools</th><th>Students</th>' +
+      '<th>Aided</th><th>Unaided</th><th>Private</th>' +
+      '<th>Rural Area</th><th>Girls-Only</th><th>SC/ST Rep.</th><th>Fishing/Coastal</th>' +
+      '</tr></thead><tbody>' + rows.map(function (r) {
+        return '<tr><td>' + esc(r.district) + '</td><td><b>' + esc(r.subDistrict) + '</b></td>' +
+          '<td>' + r.schools + '</td><td>' + r.students + '</td>' +
+          '<td>' + r.aided + '</td><td>' + r.unaided + '</td><td>' + r.private + '</td>' +
+          '<td>' + r.rural + '</td><td>' + r.girlsOnly + '</td><td>' + r.community + '</td><td>' + r.specialized + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
   }
 
   function renderConsiderations() {
@@ -604,6 +531,7 @@
         '<span class="sort-lb">Sort by</span><select id="repSortBy">' + sortOpts + '</select>' +
         '<span class="sort-lb">Order</span><select id="repSortDir">' + dirOpts + '</select>' +
         '<button class="btn" id="repDownloadBtn" type="button">Download CSV (' + rows.length + ')</button>' +
+        '<button class="btn ghost" id="repPdfBtn" type="button">Download PDF</button>' +
       '</div>' +
       '<h2 class="h">Preview<span class="cnt">' + rows.length + ' school(s)</span></h2>' + body +
       '</div>';
@@ -637,11 +565,51 @@
     setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
   }
 
+  function buildPrintableReportHtml() {
+    var r = S.rep, rows = reportRows();
+    var filterBits = [];
+    if (r.category) filterBits.push('Special consideration: ' + r.category);
+    if (r.district) filterBits.push('District: ' + r.district);
+    if (r.subDistrict) filterBits.push('Sub-district: ' + r.subDistrict);
+    if (r.institutionType) filterBits.push('Institution type: ' + r.institutionType);
+    filterBits.push('Status: ' + (r.status === 'ALL' ? 'All' : r.status === 'ACTIVE' ? 'Active' : 'Deleted'));
+    var filterText = filterBits.join(' · ') + ' · ' + rows.length + ' school(s)';
+    var rowsHtml = rows.map(function (s) {
+      return '<tr><td>' + esc(s.schoolName) + '</td>' +
+        '<td>' + esc(s.district) + ' / ' + esc(s.subDistrict) + '</td>' +
+        '<td>' + esc(s.institutionType) + '</td>' +
+        '<td>' + s.totalStudents + '</td>' +
+        '<td>' + esc(considerationTags(s).join(', ') || '—') + '</td>' +
+        '<td>' + esc(s.contactName) + (s.contactPhone ? ' · ' + esc(s.contactPhone) : '') + '</td>' +
+        '<td>' + esc(s.status) + '</td></tr>';
+    }).join('') || '<tr><td colspan="7" style="text-align:center;color:#888;padding:16px">No submissions match these filters.</td></tr>';
+    return '<table class="print-table">' +
+      '<thead>' +
+        '<tr><td colspan="7">' +
+          '<div class="print-brand">' +
+            '<img class="print-logo" src="logo-kuttyolum.jpg" alt="">' +
+            '<div><h1>Kuttyolum Collectorum</h1><p>Reservation Report &middot; District Administration, Kozhikode</p></div>' +
+            '<div class="print-meta">Generated ' + esc(new Date().toLocaleString()) + '<br>Enable &ldquo;Headers and footers&rdquo; in the print dialog for page numbers.</div>' +
+          '</div>' +
+          '<div class="print-filters">' + esc(filterText) + '</div>' +
+        '</td></tr>' +
+        '<tr class="print-col-head"><th>School</th><th>District / Sub-District</th><th>Institution</th><th>Students</th><th>Special Considerations</th><th>Contact</th><th>Status</th></tr>' +
+      '</thead>' +
+      '<tbody>' + rowsHtml + '</tbody>' +
+      '<tfoot><tr><td colspan="7">Kuttyolum Collectorum &middot; District Administration, Kozhikode</td></tr></tfoot>' +
+      '</table>';
+  }
+
+  function downloadReportPDF() {
+    var area = $('printArea');
+    if (!area) { area = document.createElement('div'); area.id = 'printArea'; document.body.appendChild(area); }
+    area.innerHTML = buildPrintableReportHtml();
+    setTimeout(function () { window.print(); }, 60);
+  }
+
   // ------------------------------------------------------------------ wiring
   function wireTab() {
-    if (S.tab === 'map') {
-      buildMap();
-    } else if (S.tab === 'considerations') {
+    if (S.tab === 'considerations') {
       Array.prototype.forEach.call($('main').querySelectorAll('[data-res]'), function (b) {
         b.addEventListener('click', function () {
           var r = b.getAttribute('data-res');
@@ -663,6 +631,7 @@
       $('repSortBy').addEventListener('change', function () { S.rep.sortBy = this.value; render(); });
       $('repSortDir').addEventListener('change', function () { S.rep.sortDir = this.value; render(); });
       $('repDownloadBtn').addEventListener('click', downloadReportCSV);
+      $('repPdfBtn').addEventListener('click', downloadReportPDF);
     } else if (S.tab === 'schools') {
       $('schoolSearch').addEventListener('input', function () { S.schoolSearch = this.value; render(); $('schoolSearch').focus(); $('schoolSearch').selectionStart = $('schoolSearch').value.length; });
       $('addSchoolBtn').addEventListener('click', function () { openSchoolModal(null); });
