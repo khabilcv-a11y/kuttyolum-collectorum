@@ -253,7 +253,10 @@ function submitReservation(payload) {
       bool_(payload.photoConsent) ? 'Yes' : 'No', clean_(payload.medicalInfo), true, STATUS.ACTIVE, now, ''
     ]);
     audit_([{ action: 'SUBMIT', id: id, next: schoolName + ' (' + district + ' / ' + subDistrict + ') submitted' }], 'Form');
-    invalidate_();
+    // No invalidate_() here: a submission doesn't change the school list,
+    // districts or question options that the cached form bootstrap serves —
+    // clearing that cache on every submit would force the next visitor
+    // (possibly seconds later) to pay the slow cold-read cost again.
     return { ok: true, id: id, message: 'Thank you! The confirmation for ' + schoolName + ' has been recorded.' };
   });
 }
@@ -323,7 +326,6 @@ function updateSubmission(pin, id, changes, official) {
     var now = new Date();
     setCells_(sh, colMap_(sh), s._row, mergeObj_(next, { 'Updated At': now, 'Updated By': user }));
     audit_([{ action: 'UPDATE', id: s.id, prev: describeSubmission_(s), next: next['School Name'] + ' updated' }], user);
-    invalidate_();
     return { ok: true, message: 'Submission ' + s.id + ' updated.', state: adminSnapshot_() };
   });
 }
@@ -341,7 +343,6 @@ function setSubmissionStatus(pin, id, status, official) {
     var now = new Date();
     setCells_(sh, colMap_(sh), s._row, { 'Status': status, 'Updated At': now, 'Updated By': user });
     audit_([{ action: status === STATUS.DELETED ? 'DELETE' : 'RESTORE', id: s.id, prev: describeSubmission_(s), next: status }], user);
-    invalidate_();
     return { ok: true, message: 'Submission ' + s.id + (status === STATUS.DELETED ? ' deleted.' : ' restored.'), state: adminSnapshot_() };
   });
 }
