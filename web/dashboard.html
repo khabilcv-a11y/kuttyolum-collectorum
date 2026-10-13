@@ -208,7 +208,7 @@
     { label: 'Rural Area', test: function (s) { return s.setting === 'Rural Area'; } },
     { label: 'Girls-Only Institution', test: function (s) { return s.demographics === 'Girls-Only Institution'; } },
     { label: 'SC/ST Community Representation', test: function (s) { return s.communityRepresentation; } },
-    { label: 'Fishing / Coastal Community Focus', test: function (s) { return s.specializedFocus; } }
+    { label: 'Specialized Group Focus (Coastal / Migrant etc.)', test: function (s) { return s.specializedFocus; } }
   ];
   function considerationTags(s) {
     return CONSIDERATIONS.filter(function (c) { return c.test(s); }).map(function (c) { return c.label; });
@@ -546,13 +546,13 @@
     var rows = reportRows();
     var headers = ['Submission ID', 'Timestamp', 'School Name', 'School Source', 'Educational District', 'Sub-District',
       'Institution Type', 'Total Students', 'Contact Person', 'Contact Phone', 'Geographic Setting', 'Student Demographics',
-      'SC/ST Community Representation', 'Community Representation Note', 'Fishing/Coastal Community Focus', 'Status'];
+      'SC/ST Community Representation', 'Community Representation Note', 'Specialized Group Focus', 'Specialized Group Percentage', 'Status'];
     var lines = [headers.map(csvCell_).join(',')];
     rows.forEach(function (s) {
       lines.push([
         s.id, s.ts ? new Date(s.ts).toISOString() : '', s.schoolName, s.schoolSource, s.district, s.subDistrict,
         s.institutionType, s.totalStudents, s.contactName, s.contactPhone, s.setting, s.demographics,
-        s.communityRepresentation ? 'Yes' : 'No', s.communityNote, s.specializedFocus ? 'Yes' : 'No', s.status
+        s.communityRepresentation ? 'Yes' : 'No', s.communityNote, s.specializedFocus ? 'Yes' : 'No', s.specializedNote, s.status
       ].map(csvCell_).join(','));
     });
     var csv = '﻿' + lines.join('\r\n'); // BOM so Excel reads UTF-8 (Malayalam names, etc.) correctly
@@ -675,7 +675,8 @@
       selectField('Student Demographics', 'mDemographics', d.demographics, s.demographics) +
       ynField('SC/ST community representation', 'mCommunity', s.communityRepresentation) +
       field('Community representation note (optional)', 'text', 'mCommunityNote', s.communityNote) +
-      ynField('Fishing/coastal community focus', 'mSpecialized', s.specializedFocus);
+      ynField('Specialized group focus (coastal/fishing, migrant labourers, etc.)', 'mSpecialized', s.specializedFocus) +
+      field('Specialized group percentage (optional)', 'text', 'mSpecializedNote', s.specializedNote);
     openModal('Edit submission · ' + s.schoolName, body, function (root) {
       wireDistrictCascade(root, 'mDistrict', 'mSubDistrict', d.districts);
     }, function () {
@@ -687,7 +688,7 @@
         contactName: val(root, 'mContactName'), contactPhone: val(root, 'mContactPhone'),
         setting: val(root, 'mSetting'), demographics: val(root, 'mDemographics'),
         communityRepresentation: ynVal(root, 'mCommunity'), communityNote: val(root, 'mCommunityNote'),
-        specializedFocus: ynVal(root, 'mSpecialized')
+        specializedFocus: ynVal(root, 'mSpecialized'), specializedNote: val(root, 'mSpecializedNote')
       };
       if (!changes.schoolName) { $('mErr').textContent = 'School name is required.'; return; }
       call('updateSubmission', s.id, changes).then(function (res) { closeModal(); afterWrite(res); }, function (e) { $('mErr').textContent = e.message || String(e); });

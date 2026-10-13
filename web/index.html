@@ -228,14 +228,20 @@
         <div class="num">11</div>
         <label class="lbl">Does your institution serve a significant demographic of students from historically marginalized or designated communities (such as Scheduled Castes/Scheduled Tribes)? <span class="req">*</span></label>
         <div class="chips wide" id="communityChips"></div>
-        <div class="hint">Optional: you may note an approximate percentage to help us tailor outreach resources effectively.</div>
-        <input type="text" id="communityNote" placeholder="e.g. approx. 20% (optional)">
+        <div id="communityNoteWrap" class="hidden">
+          <div class="hint">Approximate percentage of such students in your institution (optional).</div>
+          <input type="text" id="communityNote" placeholder="e.g. approx. 20%">
+        </div>
         <div class="err-field">Please answer Yes or No.</div>
       </div>
       <div class="q" id="q-specialized">
         <div class="num">12</div>
-        <label class="lbl">Is your institution designated, supported, or primarily structured to cater to specialized student groups (e.g., coastal/fishing community welfare schools or similar targeted programs)? <span class="req">*</span></label>
+        <label class="lbl">Is your institution designated, supported, or primarily structured to cater to specialized student groups (e.g., coastal/fishing community welfare schools, schools for children of migrant labourers, or similar targeted programs)? <span class="req">*</span></label>
         <div class="chips wide" id="specializedChips"></div>
+        <div id="specializedNoteWrap" class="hidden">
+          <div class="hint">Approximate percentage of such students in your institution (optional).</div>
+          <input type="text" id="specializedNote" placeholder="e.g. approx. 30%">
+        </div>
         <div class="err-field">Please answer Yes or No.</div>
       </div>
     </div>
@@ -322,11 +328,13 @@
   function renderCommunity() {
     var c = $('communityChips'); c.innerHTML = '';
     ['Yes', 'No'].forEach(function (v) { chip(c, v, SEL.community === v, function () { SEL.community = v; renderCommunity(); }); });
+    $('communityNoteWrap').classList.toggle('hidden', SEL.community !== 'Yes');
   }
 
   function renderSpecialized() {
     var c = $('specializedChips'); c.innerHTML = '';
     ['Yes', 'No'].forEach(function (v) { chip(c, v, SEL.specialized === v, function () { SEL.specialized = v; renderSpecialized(); }); });
+    $('specializedNoteWrap').classList.toggle('hidden', SEL.specialized !== 'Yes');
   }
 
   function renderDistricts() {
@@ -454,8 +462,9 @@
       setting: SEL.setting,
       demographics: SEL.demographics,
       communityRepresentation: SEL.community,
-      communityNote: $('communityNote').value.trim(),
+      communityNote: SEL.community === 'Yes' ? $('communityNote').value.trim() : '',
       specializedFocus: SEL.specialized,
+      specializedNote: SEL.specialized === 'Yes' ? $('specializedNote').value.trim() : '',
       declaration: true
     };
     $('submitBtn').disabled = true; $('submitBtn').textContent = 'Submitting…';

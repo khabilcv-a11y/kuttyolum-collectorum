@@ -49,6 +49,7 @@
     var community = rnd() < 0.3 ? 'Yes' : 'No';
     var communityNote = community === 'Yes' && rnd() < 0.5 ? 'approx. ' + (10 + Math.floor(rnd() * 40)) + '%' : '';
     var specialized = rnd() < 0.15 ? 'Yes' : 'No';
+    var specializedNote = specialized === 'Yes' ? 'approx. ' + (10 + Math.floor(rnd() * 40)) + '%' : '';
     var now = new Date(Date.now() - Math.floor(rnd() * 8) * 86400000);
     return [
       'SUB-' + ('000' + (i + 1)).slice(-4), now, sc[0], 'LISTED', sc[1], pick(ITYPE),
@@ -56,7 +57,7 @@
       sc[2], sc[3], pick(['Divya Menon', 'Jaison Mathew', 'Reshma K', 'Anoop Varma']), '94470' + (10000 + Math.floor(rnd() * 89999)),
       'contact' + (i + 1) + '@school.edu.in', setting, demographics, community, communityNote, specialized,
       rnd() < 0.15 ? 'Yes' : 'No', rnd() < 0.9 ? 'Yes' : 'No', rnd() < 0.85 ? 'Yes' : 'No',
-      rnd() < 0.1 ? 'One student with a peanut allergy.' : '', true, 'ACTIVE', now, ''
+      rnd() < 0.1 ? 'One student with a peanut allergy.' : '', true, 'ACTIVE', now, '', specializedNote
     ];
   }
 
@@ -83,7 +84,7 @@
         'Email', 'Geographic Setting', 'Student Demographics', 'SC/ST Community Representation',
         'Community Representation Note', 'Fishing/Coastal Community Focus',
         'Accessibility Support', 'Parent Consent', 'Photo Video Consent',
-        'Medical Info', 'Declaration', 'Status', 'Updated At', 'Updated By'];
+        'Medical Info', 'Declaration', 'Status', 'Updated At', 'Updated By', 'Specialized Group Percentage'];
     }
 
     store.cache = {};

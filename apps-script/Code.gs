@@ -66,7 +66,8 @@ var HEADERS = {
                 'Email', 'Geographic Setting', 'Student Demographics', 'SC/ST Community Representation',
                 'Community Representation Note', 'Fishing/Coastal Community Focus',
                 'Accessibility Support', 'Parent Consent', 'Photo Video Consent',
-                'Medical Info', 'Declaration', 'Status', 'Updated At', 'Updated By'],
+                'Medical Info', 'Declaration', 'Status', 'Updated At', 'Updated By',
+                'Specialized Group Percentage'],
   AUDIT: ['Timestamp', 'Action', 'Submission ID', 'Previous Value', 'New Value', 'User']
 };
 
@@ -212,7 +213,7 @@ function getFormBootstrap() {
  *   district, subDistrict, address, totalStudents, classes: [...],
  *   contactName, contactPhone, coordinatorName, coordinatorPhone, email,
  *   setting, demographics, communityRepresentation: 'Yes'|'No', communityNote,
- *   specializedFocus: 'Yes'|'No', accessibility, parentConsent, photoConsent,
+ *   specializedFocus: 'Yes'|'No', specializedNote (only kept when Yes), accessibility, parentConsent, photoConsent,
  *   medicalInfo, declaration
  * }
  */
@@ -259,10 +260,11 @@ function submitReservation(payload) {
 
     var communityRaw = clean_(payload.communityRepresentation);
     if (['Yes', 'No'].indexOf(communityRaw) < 0) throw new Error('Answer the student community representation question.');
-    var communityNote = clean_(payload.communityNote);
+    var communityNote = communityRaw === 'Yes' ? clean_(payload.communityNote) : '';
 
     var specializedRaw = clean_(payload.specializedFocus);
     if (['Yes', 'No'].indexOf(specializedRaw) < 0) throw new Error('Answer the specialized focus / support programs question.');
+    var specializedNote = specializedRaw === 'Yes' ? clean_(payload.specializedNote) : '';
 
     if (!payload.declaration) throw new Error('Please confirm the declaration before submitting.');
 
@@ -275,7 +277,7 @@ function submitReservation(payload) {
       totalStudents, classes.join(', '), contactName, contactPhone, coordName, coordPhone, email,
       setting, demographics, communityRaw, communityNote, specializedRaw,
       bool_(payload.accessibility) ? 'Yes' : 'No', bool_(payload.parentConsent) ? 'Yes' : 'No',
-      bool_(payload.photoConsent) ? 'Yes' : 'No', clean_(payload.medicalInfo), true, STATUS.ACTIVE, now, ''
+      bool_(payload.photoConsent) ? 'Yes' : 'No', clean_(payload.medicalInfo), true, STATUS.ACTIVE, now, '', specializedNote
     ]);
     audit_([{ action: 'SUBMIT', id: id, next: schoolName + ' (' + district + ' / ' + subDistrict + ') submitted' }], 'Form');
     // No invalidate_() here: a submission doesn't change the school list,
@@ -335,6 +337,7 @@ function updateSubmission(pin, id, changes, official) {
       'Student Demographics': changes.demographics != null ? clean_(changes.demographics) : s.demographics,
       'SC/ST Community Representation': changes.communityRepresentation != null ? (bool_(changes.communityRepresentation) ? 'Yes' : 'No') : (s.communityRepresentation ? 'Yes' : 'No'),
       'Community Representation Note': changes.communityNote != null ? clean_(changes.communityNote) : s.communityNote,
+      'Specialized Group Percentage': changes.specializedNote != null ? clean_(changes.specializedNote) : s.specializedNote,
       'Fishing/Coastal Community Focus': changes.specializedFocus != null ? (bool_(changes.specializedFocus) ? 'Yes' : 'No') : (s.specializedFocus ? 'Yes' : 'No'),
       'Accessibility Support': changes.accessibility != null ? (bool_(changes.accessibility) ? 'Yes' : 'No') : (s.accessibility ? 'Yes' : 'No'),
       'Parent Consent': changes.parentConsent != null ? (bool_(changes.parentConsent) ? 'Yes' : 'No') : (s.parentConsent ? 'Yes' : 'No'),
@@ -595,13 +598,21 @@ function ensureSheet_(ss, name, headers) {
     sh.getRange(1, 1, 1, headers.length).setValues([headers])
       .setFontWeight('bold').setBackground('#1f3d3d').setFontColor('#ffffff');
     sh.setFrozenRows(1);
+  } else {
+    // Sheets created before a column was added: append the missing trailing headers.
+    for (var i = 0; i < headers.length; i++) {
+      if (first[i] === '' || first[i] === null) {
+        sh.getRange(1, i + 1).setValue(headers[i])
+          .setFontWeight('bold').setBackground('#1f3d3d').setFontColor('#ffffff');
+      }
+    }
   }
   return sh;
 }
 
 function sheet_(name, headers) {
   var ss = ss_();
-  return ss.getSheetByName(name) || ensureSheet_(ss, name, headers);
+  return ensureSheet_(ss, name, headers);
 }
 
 /** Reads a sheet into objects keyed by header text. Adds `_row` (1-based). */
@@ -650,7 +661,7 @@ function readSubmissions_() {
       email: clean_(r['Email']),
       setting: clean_(r['Geographic Setting']), demographics: clean_(r['Student Demographics']),
       communityRepresentation: yes_(r['SC/ST Community Representation']), communityNote: clean_(r['Community Representation Note']),
-      specializedFocus: yes_(r['Fishing/Coastal Community Focus']),
+      specializedFocus: yes_(r['Fishing/Coastal Community Focus']), specializedNote: clean_(r['Specialized Group Percentage']),
       accessibility: yes_(r['Accessibility Support']), parentConsent: yes_(r['Parent Consent']),
       photoConsent: yes_(r['Photo Video Consent']), medicalInfo: clean_(r['Medical Info']),
       status: key_(r['Status']) || STATUS.ACTIVE, updatedAt: toMs_(r['Updated At']), updatedBy: clean_(r['Updated By']),
@@ -666,7 +677,7 @@ function publicSubmission_(s) {
     totalStudents: s.totalStudents, classes: s.classes, contactName: s.contactName, contactPhone: s.contactPhone,
     coordinatorName: s.coordinatorName, coordinatorPhone: s.coordinatorPhone, email: s.email,
     setting: s.setting, demographics: s.demographics, communityRepresentation: s.communityRepresentation,
-    communityNote: s.communityNote, specializedFocus: s.specializedFocus,
+    communityNote: s.communityNote, specializedFocus: s.specializedFocus, specializedNote: s.specializedNote,
     accessibility: s.accessibility, parentConsent: s.parentConsent,
     photoConsent: s.photoConsent, medicalInfo: s.medicalInfo, status: s.status, updatedAt: s.updatedAt, updatedBy: s.updatedBy
   };
