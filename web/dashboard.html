@@ -110,16 +110,20 @@
   .modal-err { color: var(--bad); font-size: 12.5px; margin-bottom: 8px; min-height: 16px; }
 
   /* ---------- branding ---------- */
+  .badge-logo { border-radius: 50%; background: #fff; overflow: hidden; display: block; flex: none; }
+  .badge-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #login .badge-logo { width: 130px; height: 130px; margin: 0 auto 12px; box-shadow: 0 4px 16px rgba(0,0,0,.15); border: 1px solid var(--line); }
+  .top .badge-logo { width: 46px; height: 46px; }
+  .brand-wrap { display: flex; align-items: center; gap: 12px; margin-right: auto; }
   .logo-strip { background: #ffffff; padding: 10px 16px; border-bottom: 1px solid var(--line); }
-  .logo-strip-inner { max-width: 1180px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-  .logo-strip .logo-main img { height: 42px; width: auto; display: block; }
+  .logo-strip-inner { max-width: 1180px; margin: 0 auto; display: flex; align-items: center; justify-content: flex-end; gap: 16px; flex-wrap: wrap; }
   .logo-strip .logo-partners { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
   .logo-strip .logo-partners-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; font-weight: 700; }
   .logo-strip .logo-partners-row { display: flex; align-items: center; gap: 12px; }
   .logo-strip .logo-partners-row img { height: 26px; width: auto; display: block; }
   @media (max-width: 560px) {
     .logo-strip-inner { justify-content: center; text-align: center; }
-    .logo-strip .logo-main, .logo-strip .logo-partners { width: 100%; justify-content: center; align-items: center; }
+    .logo-strip .logo-partners { width: 100%; justify-content: center; align-items: center; }
     .logo-strip .logo-partners-row { justify-content: center; flex-wrap: wrap; }
   }
 
@@ -152,9 +156,6 @@
 
 <div class="logo-strip">
   <div class="logo-strip-inner">
-    <div class="logo-main">
-      <img src="logo-kuttyolum.jpg" alt="Kuttyolum Collectorum">
-    </div>
     <div class="logo-partners">
       <span class="logo-partners-label">An initiative of</span>
       <div class="logo-partners-row">
@@ -167,6 +168,7 @@
 
 <div id="login">
   <div class="card">
+    <div class="badge-logo"><img src="logo-kuttyolum.jpg" alt="Kuttyolum Collectorum"></div>
     <h1>Kuttyolum Collectorum</h1>
     <p class="sub">Dashboard · District Administration, Kozhikode</p>
     <div class="err" id="loginErr"></div>
@@ -179,7 +181,8 @@
 <div id="app" class="hidden">
   <div class="top">
     <div class="top-inner">
-      <div class="brand"><b>Kuttyolum Collectorum</b><span>Reservation Dashboard</span></div>
+      <div class="brand-wrap"><div class="badge-logo"><img src="logo-kuttyolum.jpg" alt=""></div>
+      <div class="brand"><b>Kuttyolum Collectorum</b><span>Reservation Dashboard</span></div></div>
       <div class="who"><span id="whoLabel"></span><button id="logoutBtn" type="button">Log out</button></div>
     </div>
     <div class="tabs" id="tabs">
