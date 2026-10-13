@@ -46,7 +46,7 @@ var CONFIG = {
   },
 
   CLASSES: ['5', '6', '7', '8', '9', '10', '11', '12'],
-  INSTITUTION_TYPES: ['Aided', 'Unaided', 'Private'],
+  INSTITUTION_TYPES: ['Government', 'Aided'],
   SETTINGS: ['Rural Area', 'Semi-Urban / Urban Area'],
   DEMOGRAPHICS: ['Girls-Only Institution', 'Co-educational Institution'],
 
@@ -229,7 +229,7 @@ function submitReservation(payload) {
     if (CONFIG.DISTRICTS[district].indexOf(subDistrict) < 0) throw new Error('Select a valid sub-district.');
 
     var institutionType = clean_(payload.institutionType);
-    if (CONFIG.INSTITUTION_TYPES.indexOf(institutionType) < 0) throw new Error('Select whether the school is Aided, Unaided or Private.');
+    if (CONFIG.INSTITUTION_TYPES.indexOf(institutionType) < 0) throw new Error('Select whether the school is Government or Aided.');
 
     // Classes, teacher coordinator, email, accessibility/consent and medical
     // info are intentionally NOT collected here — they're already gathered

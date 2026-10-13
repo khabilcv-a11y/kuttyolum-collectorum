@@ -351,16 +351,15 @@
     var map = {};
     Object.keys(d.districts).forEach(function (district) {
       d.districts[district].forEach(function (sub) {
-        map[district + '||' + sub] = { district: district, subDistrict: sub, schools: 0, students: 0, aided: 0, unaided: 0, private: 0, rural: 0, girlsOnly: 0, community: 0, specialized: 0 };
+        map[district + '||' + sub] = { district: district, subDistrict: sub, schools: 0, students: 0, government: 0, aided: 0, rural: 0, girlsOnly: 0, community: 0, specialized: 0 };
       });
     });
     (d.submissions || []).filter(function (s) { return s.status === 'ACTIVE'; }).forEach(function (s) {
       var key = s.district + '||' + s.subDistrict;
-      var row = map[key] || (map[key] = { district: s.district, subDistrict: s.subDistrict, schools: 0, students: 0, aided: 0, unaided: 0, private: 0, rural: 0, girlsOnly: 0, community: 0, specialized: 0 });
+      var row = map[key] || (map[key] = { district: s.district, subDistrict: s.subDistrict, schools: 0, students: 0, government: 0, aided: 0, rural: 0, girlsOnly: 0, community: 0, specialized: 0 });
       row.schools++;
-      if (s.institutionType === 'Aided') row.aided++;
-      else if (s.institutionType === 'Unaided') row.unaided++;
-      else if (s.institutionType === 'Private') row.private++;
+      if (s.institutionType === 'Government') row.government++;
+      else if (s.institutionType === 'Aided') row.aided++;
       if (s.setting === 'Rural Area') row.rural++;
       if (s.demographics === 'Girls-Only Institution') row.girlsOnly++;
       if (s.communityRepresentation) row.community++;
@@ -375,12 +374,12 @@
     if (!rows.length) return emptyMsg();
     return '<div style="overflow-x:auto"><table class="dt"><thead><tr>' +
       '<th>Educational District</th><th>Sub-District</th><th>Schools</th>' +
-      '<th>Aided</th><th>Unaided</th><th>Private</th>' +
+      '<th>Government</th><th>Aided</th>' +
       '<th>Rural Area</th><th>Girls-Only</th><th>SC/ST Rep.</th><th>Fishing/Coastal</th>' +
       '</tr></thead><tbody>' + rows.map(function (r) {
         return '<tr><td>' + esc(r.district) + '</td><td><b>' + esc(r.subDistrict) + '</b></td>' +
           '<td>' + r.schools + '</td>' +
-          '<td>' + r.aided + '</td><td>' + r.unaided + '</td><td>' + r.private + '</td>' +
+          '<td>' + r.government + '</td><td>' + r.aided + '</td>' +
           '<td>' + r.rural + '</td><td>' + r.girlsOnly + '</td><td>' + r.community + '</td><td>' + r.specialized + '</td></tr>';
       }).join('') + '</tbody></table></div>';
   }

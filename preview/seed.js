@@ -31,7 +31,7 @@
     'Vatakara', 'Koyilandy', 'Nadapuram', 'Thodannur', 'Chombala',
     'Kozhikode City', 'Chevayur', 'Feroke', 'Kozhikode Rural', 'Kozhikode City'
   ];
-  var ITYPE = ['Aided', 'Unaided', 'Private'];
+  var ITYPE = ['Government', 'Aided'];
   var SETTINGS = ['Rural Area', 'Semi-Urban / Urban Area'];
   var DEMOGRAPHICS = ['Girls-Only Institution', 'Co-educational Institution'];
 
