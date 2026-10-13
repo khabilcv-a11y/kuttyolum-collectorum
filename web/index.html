@@ -190,25 +190,18 @@
         <label class="lbl" for="address">School Address</label>
         <textarea id="address" placeholder="Full postal address"></textarea>
       </div>
-
-      <div class="q" id="q-students">
-        <div class="num">06</div>
-        <label class="lbl" for="totalStudents">Total No. of Students in School <span class="req">*</span></label>
-        <input type="number" id="totalStudents" min="0" step="1" placeholder="e.g. 420">
-        <div class="err-field">Enter the total number of students.</div>
-      </div>
     </div>
 
     <div class="card">
       <div class="section-title">Contact Person</div>
       <div class="q" id="q-contactName">
-        <div class="num">07</div>
+        <div class="num">06</div>
         <label class="lbl" for="contactName">Contact Person Name <span class="req">*</span></label>
         <input type="text" id="contactName" placeholder="Full name">
         <div class="err-field">Enter the contact person's name.</div>
       </div>
       <div class="q" id="q-contactPhone">
-        <div class="num">08</div>
+        <div class="num">07</div>
         <label class="lbl" for="contactPhone">Contact Person - Mobile Number <span class="req">*</span></label>
         <input type="tel" id="contactPhone" placeholder="10-digit mobile number">
         <div class="err-field">Enter a valid mobile number.</div>
@@ -218,19 +211,19 @@
     <div class="card">
       <div class="section-title">Additional Institution Details</div>
       <div class="q" id="q-setting">
-        <div class="num">09</div>
+        <div class="num">08</div>
         <label class="lbl">Please indicate the geographical setting in which your institution is primarily located <span class="req">*</span></label>
         <div class="chips wide" id="settingChips"></div>
         <div class="err-field">Select a geographical setting.</div>
       </div>
       <div class="q" id="q-demographics">
-        <div class="num">10</div>
+        <div class="num">09</div>
         <label class="lbl">What is the institutional classification regarding student enrollment? <span class="req">*</span></label>
         <div class="chips wide" id="demographicsChips"></div>
         <div class="err-field">Select a classification.</div>
       </div>
       <div class="q" id="q-community">
-        <div class="num">11</div>
+        <div class="num">10</div>
         <label class="lbl">Does your institution serve a significant demographic of students from historically marginalized or designated communities (such as Scheduled Castes/Scheduled Tribes)? <span class="req">*</span></label>
         <div class="chips wide" id="communityChips"></div>
         <div id="communityNoteWrap" class="hidden">
@@ -240,7 +233,7 @@
         <div class="err-field">Please answer Yes or No.</div>
       </div>
       <div class="q" id="q-specialized">
-        <div class="num">12</div>
+        <div class="num">11</div>
         <label class="lbl">Is your institution designated, supported, or primarily structured to cater to specialized student groups (e.g., coastal/fishing community welfare schools, schools for children of migrant labourers, or similar targeted programs)? <span class="req">*</span></label>
         <div class="chips wide" id="specializedChips"></div>
         <div id="specializedNoteWrap" class="hidden">
@@ -435,7 +428,6 @@
     need('q-itype', !!SEL.itype);
     need('q-district', !!SEL.district);
     need('q-subdistrict', !!$('subDistrict').value);
-    need('q-students', $('totalStudents').value !== '' && Number($('totalStudents').value) >= 0);
     need('q-contactName', $('contactName').value.trim().length > 0);
     need('q-contactPhone', $('contactPhone').value.replace(/\D/g, '').length >= 10);
     need('q-setting', !!SEL.setting);
@@ -461,7 +453,6 @@
       district: SEL.district,
       subDistrict: $('subDistrict').value,
       address: $('address').value.trim(),
-      totalStudents: Number($('totalStudents').value),
       contactName: $('contactName').value.trim(),
       contactPhone: $('contactPhone').value.trim(),
       setting: SEL.setting,

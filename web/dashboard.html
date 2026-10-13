@@ -329,7 +329,6 @@
     return '' +
       '<div class="kpis">' +
         kpi(k.schools, 'Schools confirmed') +
-        kpi(k.totalStudents, 'Total students') +
         kpi(k.districts, 'Districts covered') +
         kpi(k.needingConsideration, 'With a special consideration') +
       '</div>' +
@@ -355,7 +354,7 @@
     (d.submissions || []).filter(function (s) { return s.status === 'ACTIVE'; }).forEach(function (s) {
       var key = s.district + '||' + s.subDistrict;
       var row = map[key] || (map[key] = { district: s.district, subDistrict: s.subDistrict, schools: 0, students: 0, aided: 0, unaided: 0, private: 0, rural: 0, girlsOnly: 0, community: 0, specialized: 0 });
-      row.schools++; row.students += s.totalStudents || 0;
+      row.schools++;
       if (s.institutionType === 'Aided') row.aided++;
       else if (s.institutionType === 'Unaided') row.unaided++;
       else if (s.institutionType === 'Private') row.private++;
@@ -372,12 +371,12 @@
     var rows = consolidationRows();
     if (!rows.length) return emptyMsg();
     return '<div style="overflow-x:auto"><table class="dt"><thead><tr>' +
-      '<th>Educational District</th><th>Sub-District</th><th>Schools</th><th>Students</th>' +
+      '<th>Educational District</th><th>Sub-District</th><th>Schools</th>' +
       '<th>Aided</th><th>Unaided</th><th>Private</th>' +
       '<th>Rural Area</th><th>Girls-Only</th><th>SC/ST Rep.</th><th>Fishing/Coastal</th>' +
       '</tr></thead><tbody>' + rows.map(function (r) {
         return '<tr><td>' + esc(r.district) + '</td><td><b>' + esc(r.subDistrict) + '</b></td>' +
-          '<td>' + r.schools + '</td><td>' + r.students + '</td>' +
+          '<td>' + r.schools + '</td>' +
           '<td>' + r.aided + '</td><td>' + r.unaided + '</td><td>' + r.private + '</td>' +
           '<td>' + r.rural + '</td><td>' + r.girlsOnly + '</td><td>' + r.community + '</td><td>' + r.specialized + '</td></tr>';
       }).join('') + '</tbody></table></div>';
@@ -399,9 +398,9 @@
   }
 
   function renderSchoolListTable(list) {
-    return '<table class="dt"><thead><tr><th>School</th><th>District / Sub-District</th><th>Institution</th><th>Students</th><th>Contact</th><th>Phone</th></tr></thead><tbody>' +
+    return '<table class="dt"><thead><tr><th>School</th><th>District / Sub-District</th><th>Institution</th><th>Contact</th><th>Phone</th></tr></thead><tbody>' +
       list.map(function (s) {
-        return '<tr><td><b>' + esc(s.schoolName) + '</b></td><td>' + esc(s.district) + ' / ' + esc(s.subDistrict) + '</td><td>' + esc(s.institutionType) + '</td><td>' + s.totalStudents + '</td><td>' + esc(s.contactName) + '</td><td>' + esc(s.contactPhone) + '</td></tr>';
+        return '<tr><td><b>' + esc(s.schoolName) + '</b></td><td>' + esc(s.district) + ' / ' + esc(s.subDistrict) + '</td><td>' + esc(s.institutionType) + '</td><td>' + esc(s.contactName) + '</td><td>' + esc(s.contactPhone) + '</td></tr>';
       }).join('') + '</tbody></table>';
   }
 
@@ -417,14 +416,13 @@
     var extraKeys = {}; d.schoolsExtra.forEach(function (s) { extraKeys[s.name.toLowerCase()] = true; });
     var districtOpts = '<option value="">All districts</option>' + Object.keys(d.districts).map(function (dd) { return '<option value="' + esc(dd) + '"' + (S.subDistrictF === dd ? ' selected' : '') + '>' + esc(dd) + '</option>'; }).join('');
     var body = !rows.length ? '<div class="empty">No submissions match.</div>' : '<table class="dt"><thead><tr>' +
-      '<th>School</th><th>District</th><th>Institution</th><th>Students</th><th>Special Considerations</th><th>Contact</th><th>Status</th><th></th>' +
+      '<th>School</th><th>District</th><th>Institution</th><th>Special Considerations</th><th>Contact</th><th>Status</th><th></th>' +
       '</tr></thead><tbody>' + rows.map(function (s) {
         var canPromote = s.schoolSource === 'NEW' && !extraKeys[s.schoolName.toLowerCase()];
         return '<tr>' +
           '<td><b>' + esc(s.schoolName) + '</b> ' + (s.schoolSource === 'NEW' ? '<span class="pill new">NEW</span>' : '') + '<div style="color:var(--muted);font-size:11px">' + esc(s.subDistrict) + '</div></td>' +
           '<td>' + esc(s.district) + '</td>' +
           '<td>' + esc(s.institutionType) + '</td>' +
-          '<td>' + s.totalStudents + '</td>' +
           '<td>' + considerationTags(s).map(function (r) { return '<span class="pill">' + esc(r) + '</span>'; }).join('') + '</td>' +
           '<td>' + esc(s.contactName) + '<div style="color:var(--muted);font-size:11px">' + esc(s.contactPhone) + '</div></td>' +
           '<td>' + (s.status === 'ACTIVE' ? '<span class="pill ok">ACTIVE</span>' : '<span class="pill del">DELETED</span>') + '</td>' +
@@ -472,7 +470,7 @@
 
   // ------------------------------------------------------------------ reports
   var SORT_FIELDS = [
-    ['schoolName', 'School Name'], ['totalStudents', 'Total Students'], ['district', 'Educational District'],
+    ['schoolName', 'School Name'], ['district', 'Educational District'],
     ['subDistrict', 'Sub-District'], ['institutionType', 'Institution Type'], ['ts', 'Submission Date']
   ];
 
@@ -507,12 +505,11 @@
     var sortOpts = SORT_FIELDS.map(function (f) { return opt(f[0], f[1], r.sortBy === f[0]); }).join('');
     var dirOpts = opt('asc', 'Ascending', r.sortDir === 'asc') + opt('desc', 'Descending', r.sortDir === 'desc');
     var body = !rows.length ? '<div class="empty">No submissions match these filters.</div>' : '<table class="dt"><thead><tr>' +
-      '<th>School</th><th>District / Sub-District</th><th>Institution</th><th>Students</th><th>Special Considerations</th><th>Contact</th><th>Status</th>' +
+      '<th>School</th><th>District / Sub-District</th><th>Institution</th><th>Special Considerations</th><th>Contact</th><th>Status</th>' +
       '</tr></thead><tbody>' + rows.map(function (s) {
         return '<tr><td><b>' + esc(s.schoolName) + '</b></td>' +
           '<td>' + esc(s.district) + ' / ' + esc(s.subDistrict) + '</td>' +
           '<td>' + esc(s.institutionType) + '</td>' +
-          '<td>' + s.totalStudents + '</td>' +
           '<td>' + considerationTags(s).map(function (rr) { return '<span class="pill">' + esc(rr) + '</span>'; }).join('') + '</td>' +
           '<td>' + esc(s.contactName) + '<div style="color:var(--muted);font-size:11px">' + esc(s.contactPhone) + '</div></td>' +
           '<td>' + (s.status === 'ACTIVE' ? '<span class="pill ok">ACTIVE</span>' : '<span class="pill del">DELETED</span>') + '</td></tr>';
@@ -545,13 +542,13 @@
   function downloadReportCSV() {
     var rows = reportRows();
     var headers = ['Submission ID', 'Timestamp', 'School Name', 'School Source', 'Educational District', 'Sub-District',
-      'Institution Type', 'Total Students', 'Contact Person', 'Contact Phone', 'Geographic Setting', 'Student Demographics',
+      'Institution Type', 'Contact Person', 'Contact Phone', 'Geographic Setting', 'Student Demographics',
       'SC/ST Community Representation', 'Community Representation Note', 'Specialized Group Focus', 'Specialized Group Percentage', 'Status'];
     var lines = [headers.map(csvCell_).join(',')];
     rows.forEach(function (s) {
       lines.push([
         s.id, s.ts ? new Date(s.ts).toISOString() : '', s.schoolName, s.schoolSource, s.district, s.subDistrict,
-        s.institutionType, s.totalStudents, s.contactName, s.contactPhone, s.setting, s.demographics,
+        s.institutionType, s.contactName, s.contactPhone, s.setting, s.demographics,
         s.communityRepresentation ? 'Yes' : 'No', s.communityNote, s.specializedFocus ? 'Yes' : 'No', s.specializedNote, s.status
       ].map(csvCell_).join(','));
     });
@@ -577,14 +574,13 @@
       return '<tr><td>' + esc(s.schoolName) + '</td>' +
         '<td>' + esc(s.district) + ' / ' + esc(s.subDistrict) + '</td>' +
         '<td>' + esc(s.institutionType) + '</td>' +
-        '<td>' + s.totalStudents + '</td>' +
         '<td>' + esc(considerationTags(s).join(', ') || '—') + '</td>' +
         '<td>' + esc(s.contactName) + (s.contactPhone ? ' · ' + esc(s.contactPhone) : '') + '</td>' +
         '<td>' + esc(s.status) + '</td></tr>';
-    }).join('') || '<tr><td colspan="7" style="text-align:center;color:#888;padding:16px">No submissions match these filters.</td></tr>';
+    }).join('') || '<tr><td colspan="6" style="text-align:center;color:#888;padding:16px">No submissions match these filters.</td></tr>';
     return '<table class="print-table">' +
       '<thead>' +
-        '<tr><td colspan="7">' +
+        '<tr><td colspan="6">' +
           '<div class="print-brand">' +
             '<img class="print-logo" src="logo-kuttyolum.jpg" alt="">' +
             '<div><h1>Kuttyolum Collectorum</h1><p>Reservation Report &middot; District Administration, Kozhikode</p></div>' +
@@ -592,10 +588,10 @@
           '</div>' +
           '<div class="print-filters">' + esc(filterText) + '</div>' +
         '</td></tr>' +
-        '<tr class="print-col-head"><th>School</th><th>District / Sub-District</th><th>Institution</th><th>Students</th><th>Special Considerations</th><th>Contact</th><th>Status</th></tr>' +
+        '<tr class="print-col-head"><th>School</th><th>District / Sub-District</th><th>Institution</th><th>Special Considerations</th><th>Contact</th><th>Status</th></tr>' +
       '</thead>' +
       '<tbody>' + rowsHtml + '</tbody>' +
-      '<tfoot><tr><td colspan="7">Kuttyolum Collectorum &middot; District Administration, Kozhikode</td></tr></tfoot>' +
+      '<tfoot><tr><td colspan="6">Kuttyolum Collectorum &middot; District Administration, Kozhikode</td></tr></tfoot>' +
       '</table>';
   }
 
@@ -669,7 +665,6 @@
       selectField('Institution Type', 'mItype', d.institutionTypes, s.institutionType) +
       '<div class="grid2">' + selectField('Educational District', 'mDistrict', Object.keys(d.districts), s.district) + selectField('Sub-District', 'mSubDistrict', d.districts[s.district] || [], s.subDistrict) + '</div>' +
       field('Address', 'textarea', 'mAddress', s.address) +
-      field('Total Students', 'number', 'mStudents', s.totalStudents) +
       '<div class="grid2">' + field('Contact Person', 'text', 'mContactName', s.contactName) + field('Contact Phone', 'text', 'mContactPhone', s.contactPhone) + '</div>' +
       selectField('Geographic Setting', 'mSetting', d.settings, s.setting) +
       selectField('Student Demographics', 'mDemographics', d.demographics, s.demographics) +
@@ -684,7 +679,6 @@
       var changes = {
         schoolName: val(root, 'mName'), institutionType: val(root, 'mItype'),
         district: val(root, 'mDistrict'), subDistrict: val(root, 'mSubDistrict'), address: val(root, 'mAddress'),
-        totalStudents: Number(val(root, 'mStudents')),
         contactName: val(root, 'mContactName'), contactPhone: val(root, 'mContactPhone'),
         setting: val(root, 'mSetting'), demographics: val(root, 'mDemographics'),
         communityRepresentation: ynVal(root, 'mCommunity'), communityNote: val(root, 'mCommunityNote'),

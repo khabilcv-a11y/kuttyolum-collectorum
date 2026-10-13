@@ -238,10 +238,9 @@ function submitReservation(payload) {
     // a future combined form can still pass them through if ever needed.
     var classes = [].concat(payload.classes || []).map(clean_).filter(Boolean);
 
+    // The form no longer asks for this; the column is kept so existing sheets stay aligned.
     var totalStudents = Number(payload.totalStudents);
-    if (!isFinite(totalStudents) || totalStudents < 0 || Math.floor(totalStudents) !== totalStudents) {
-      throw new Error('Enter a valid total number of students.');
-    }
+    if (!isFinite(totalStudents) || totalStudents < 0 || Math.floor(totalStudents) !== totalStudents) totalStudents = 0;
 
     var contactName = clean_(payload.contactName);
     var contactPhone = clean_(payload.contactPhone);
@@ -684,7 +683,7 @@ function publicSubmission_(s) {
 }
 
 function describeSubmission_(s) {
-  return s.schoolName + ' | ' + s.district + ' / ' + s.subDistrict + ' | ' + s.totalStudents + ' students | ' + s.status;
+  return s.schoolName + ' | ' + s.district + ' / ' + s.subDistrict + ' | ' + s.status;
 }
 
 function audit_(entries, user) {
