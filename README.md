@@ -75,7 +75,7 @@ medical info — that's already gathered by the separate registration/session-co
 this same spreadsheet.
 
 Both the form and the dashboard carry a branded header: the Kuttyolum Collectorum programme logo, and the
-three initiative partner logos (District Administration Kozhikode, Kozhikode City of Literature, DCIP)
+two initiative partner logos (District Administration Kozhikode, DCIP)
 under "An initiative of".
 
 **District Administration (dashboard):**
