@@ -480,7 +480,7 @@
   // Instant repeat loads: show a recently-cached bootstrap immediately (no
   // network wait), then silently refresh the school index in the background.
   // First-ever visit on a device still waits for the real network response.
-  var LS_BOOT_KEY = 'kc_form_boot_v1';
+  var LS_BOOT_KEY = 'kc_form_boot_v2';
   var LS_BOOT_MAX_AGE = 2 * 60 * 60 * 1000; // 2h
   function loadCachedBoot() {
     try {

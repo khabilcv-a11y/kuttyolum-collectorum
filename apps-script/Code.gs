@@ -72,7 +72,7 @@ var HEADERS = {
 };
 
 var STATUS = { ACTIVE: 'ACTIVE', DELETED: 'DELETED' };
-var FORM_CACHE_KEY = 'kc_form_v1';
+var FORM_CACHE_KEY = 'kc_form_v2';
 
 // "Special considerations" the dashboard surfaces as filterable tags, derived
 // from the four milder profile questions rather than a blunt category list.
