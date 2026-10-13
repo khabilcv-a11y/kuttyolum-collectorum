@@ -32,21 +32,26 @@
   .hidden { display: none !important; }
 
   .logo-strip { background: #ffffff; padding: 16px; border-bottom: 1px solid var(--line); }
-  .logo-strip-inner { max-width: 760px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-  .logo-main { display: flex; align-items: center; }
-  .logo-main img { height: 64px; width: auto; display: block; }
+  .logo-strip-inner { max-width: 760px; margin: 0 auto; display: flex; align-items: center; justify-content: flex-end; gap: 16px; flex-wrap: wrap; }
   .logo-partners { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
   .logo-partners-label { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; font-weight: 700; }
   .logo-partners-row { display: flex; align-items: center; gap: 14px; }
   .logo-partners-row img { height: 38px; width: auto; display: block; }
   @media (max-width: 520px) {
     .logo-strip-inner { justify-content: center; text-align: center; }
-    .logo-main, .logo-partners { width: 100%; justify-content: center; align-items: center; }
+    .logo-partners { width: 100%; justify-content: center; align-items: center; }
     .logo-partners-row { justify-content: center; flex-wrap: wrap; }
   }
 
   header.top { background: var(--accent); color: #fff; padding: 22px 16px 26px; }
-  .top-inner { max-width: 760px; margin: 0 auto; }
+  .top-inner { max-width: 760px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+  .top-text { flex: 1; min-width: 0; }
+  .top-logo { flex: none; width: 168px; height: 168px; border-radius: 50%; background: #fff; display: grid; place-items: center; overflow: hidden; box-shadow: 0 4px 18px rgba(0,0,0,.22); }
+  .top-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  @media (max-width: 600px) {
+    .top-inner { flex-direction: column-reverse; align-items: flex-start; }
+    .top-logo { width: 120px; height: 120px; align-self: center; }
+  }
   .eyebrow { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .85; font-weight: 700; }
   h1 { font-size: 26px; margin: 8px 0 2px; letter-spacing: .01em; }
   .mal { font-family: "Meera Inimai", Manjari, Inter, sans-serif; font-size: 17px; opacity: .9; margin: 0 0 10px; }
@@ -115,9 +120,6 @@
 
 <div class="logo-strip">
   <div class="logo-strip-inner">
-    <div class="logo-main">
-      <img src="logo-kuttyolum.jpg" alt="Kuttyolum Collectorum">
-    </div>
     <div class="logo-partners">
       <span class="logo-partners-label">An initiative of</span>
       <div class="logo-partners-row">
@@ -130,10 +132,13 @@
 
 <header class="top">
   <div class="top-inner">
+    <div class="top-text">
     <div class="eyebrow">District Administration · Kozhikode</div>
     <h1 id="titleEn">Kuttyolum Collectorum</h1>
     <p class="mal" id="titleMal">കുട്ട്യോളും കളക്ടറും — Reservation Preference Form</p>
     <p class="intro">Please confirm your school's participation and share a few details about your institution, so seating and logistics can be planned accordingly. All information is used solely for official purposes.</p>
+    </div>
+    <div class="top-logo"><img src="logo-kuttyolum.jpg" alt="Kuttyolum Collectorum"></div>
   </div>
 </header>
 
