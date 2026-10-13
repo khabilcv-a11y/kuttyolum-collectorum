@@ -32,21 +32,26 @@
   .hidden { display: none !important; }
 
   .logo-strip { background: #ffffff; padding: 16px; border-bottom: 1px solid var(--line); }
-  .logo-strip-inner { max-width: 760px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-  .logo-main { display: flex; align-items: center; }
-  .logo-main img { height: 64px; width: auto; display: block; }
+  .logo-strip-inner { max-width: 760px; margin: 0 auto; display: flex; align-items: center; justify-content: flex-end; gap: 16px; flex-wrap: wrap; }
   .logo-partners { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
   .logo-partners-label { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; font-weight: 700; }
   .logo-partners-row { display: flex; align-items: center; gap: 14px; }
   .logo-partners-row img { height: 38px; width: auto; display: block; }
   @media (max-width: 520px) {
     .logo-strip-inner { justify-content: center; text-align: center; }
-    .logo-main, .logo-partners { width: 100%; justify-content: center; align-items: center; }
+    .logo-partners { width: 100%; justify-content: center; align-items: center; }
     .logo-partners-row { justify-content: center; flex-wrap: wrap; }
   }
 
   header.top { background: var(--accent); color: #fff; padding: 22px 16px 26px; }
-  .top-inner { max-width: 760px; margin: 0 auto; }
+  .top-inner { max-width: 760px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+  .top-text { flex: 1; min-width: 0; }
+  .top-logo { flex: none; width: 168px; height: 168px; border-radius: 50%; background: #fff; display: grid; place-items: center; overflow: hidden; box-shadow: 0 4px 18px rgba(0,0,0,.22); }
+  .top-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  @media (max-width: 600px) {
+    .top-inner { flex-direction: column-reverse; align-items: flex-start; }
+    .top-logo { width: 120px; height: 120px; align-self: center; }
+  }
   .eyebrow { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .85; font-weight: 700; }
   h1 { font-size: 26px; margin: 8px 0 2px; letter-spacing: .01em; }
   .mal { font-family: "Meera Inimai", Manjari, Inter, sans-serif; font-size: 17px; opacity: .9; margin: 0 0 10px; }
@@ -115,9 +120,6 @@
 
 <div class="logo-strip">
   <div class="logo-strip-inner">
-    <div class="logo-main">
-      <img src="logo-kuttyolum.jpg" alt="Kuttyolum Collectorum">
-    </div>
     <div class="logo-partners">
       <span class="logo-partners-label">An initiative of</span>
       <div class="logo-partners-row">
@@ -130,10 +132,13 @@
 
 <header class="top">
   <div class="top-inner">
+    <div class="top-text">
     <div class="eyebrow">District Administration · Kozhikode</div>
     <h1 id="titleEn">Kuttyolum Collectorum</h1>
     <p class="mal" id="titleMal">കുട്ട്യോളും കളക്ടറും — Reservation Preference Form</p>
     <p class="intro">Please confirm your school's participation and share a few details about your institution, so seating and logistics can be planned accordingly. All information is used solely for official purposes.</p>
+    </div>
+    <div class="top-logo"><img src="logo-kuttyolum.jpg" alt="Kuttyolum Collectorum"></div>
   </div>
 </header>
 
@@ -228,14 +233,20 @@
         <div class="num">11</div>
         <label class="lbl">Does your institution serve a significant demographic of students from historically marginalized or designated communities (such as Scheduled Castes/Scheduled Tribes)? <span class="req">*</span></label>
         <div class="chips wide" id="communityChips"></div>
-        <div class="hint">Optional: you may note an approximate percentage to help us tailor outreach resources effectively.</div>
-        <input type="text" id="communityNote" placeholder="e.g. approx. 20% (optional)">
+        <div id="communityNoteWrap" class="hidden">
+          <div class="hint">Approximate percentage of such students in your institution (optional).</div>
+          <input type="text" id="communityNote" placeholder="e.g. approx. 20%">
+        </div>
         <div class="err-field">Please answer Yes or No.</div>
       </div>
       <div class="q" id="q-specialized">
         <div class="num">12</div>
-        <label class="lbl">Is your institution designated, supported, or primarily structured to cater to specialized student groups (e.g., coastal/fishing community welfare schools or similar targeted programs)? <span class="req">*</span></label>
+        <label class="lbl">Is your institution designated, supported, or primarily structured to cater to specialized student groups (e.g., coastal/fishing community welfare schools, schools for children of migrant labourers, or similar targeted programs)? <span class="req">*</span></label>
         <div class="chips wide" id="specializedChips"></div>
+        <div id="specializedNoteWrap" class="hidden">
+          <div class="hint">Approximate percentage of such students in your institution (optional).</div>
+          <input type="text" id="specializedNote" placeholder="e.g. approx. 30%">
+        </div>
         <div class="err-field">Please answer Yes or No.</div>
       </div>
     </div>
@@ -322,11 +333,13 @@
   function renderCommunity() {
     var c = $('communityChips'); c.innerHTML = '';
     ['Yes', 'No'].forEach(function (v) { chip(c, v, SEL.community === v, function () { SEL.community = v; renderCommunity(); }); });
+    $('communityNoteWrap').classList.toggle('hidden', SEL.community !== 'Yes');
   }
 
   function renderSpecialized() {
     var c = $('specializedChips'); c.innerHTML = '';
     ['Yes', 'No'].forEach(function (v) { chip(c, v, SEL.specialized === v, function () { SEL.specialized = v; renderSpecialized(); }); });
+    $('specializedNoteWrap').classList.toggle('hidden', SEL.specialized !== 'Yes');
   }
 
   function renderDistricts() {
@@ -454,8 +467,9 @@
       setting: SEL.setting,
       demographics: SEL.demographics,
       communityRepresentation: SEL.community,
-      communityNote: $('communityNote').value.trim(),
+      communityNote: SEL.community === 'Yes' ? $('communityNote').value.trim() : '',
       specializedFocus: SEL.specialized,
+      specializedNote: SEL.specialized === 'Yes' ? $('specializedNote').value.trim() : '',
       declaration: true
     };
     $('submitBtn').disabled = true; $('submitBtn').textContent = 'Submitting…';
